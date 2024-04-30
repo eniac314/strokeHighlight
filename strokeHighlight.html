@@ -4969,136 +4969,6 @@ function _Browser_load(url)
 }
 
 
-
-
-// STRINGS
-
-
-var _Parser_isSubString = F5(function(smallString, offset, row, col, bigString)
-{
-	var smallLength = smallString.length;
-	var isGood = offset + smallLength <= bigString.length;
-
-	for (var i = 0; isGood && i < smallLength; )
-	{
-		var code = bigString.charCodeAt(offset);
-		isGood =
-			smallString[i++] === bigString[offset++]
-			&& (
-				code === 0x000A /* \n */
-					? ( row++, col=1 )
-					: ( col++, (code & 0xF800) === 0xD800 ? smallString[i++] === bigString[offset++] : 1 )
-			)
-	}
-
-	return _Utils_Tuple3(isGood ? offset : -1, row, col);
-});
-
-
-
-// CHARS
-
-
-var _Parser_isSubChar = F3(function(predicate, offset, string)
-{
-	return (
-		string.length <= offset
-			? -1
-			:
-		(string.charCodeAt(offset) & 0xF800) === 0xD800
-			? (predicate(_Utils_chr(string.substr(offset, 2))) ? offset + 2 : -1)
-			:
-		(predicate(_Utils_chr(string[offset]))
-			? ((string[offset] === '\n') ? -2 : (offset + 1))
-			: -1
-		)
-	);
-});
-
-
-var _Parser_isAsciiCode = F3(function(code, offset, string)
-{
-	return string.charCodeAt(offset) === code;
-});
-
-
-
-// NUMBERS
-
-
-var _Parser_chompBase10 = F2(function(offset, string)
-{
-	for (; offset < string.length; offset++)
-	{
-		var code = string.charCodeAt(offset);
-		if (code < 0x30 || 0x39 < code)
-		{
-			return offset;
-		}
-	}
-	return offset;
-});
-
-
-var _Parser_consumeBase = F3(function(base, offset, string)
-{
-	for (var total = 0; offset < string.length; offset++)
-	{
-		var digit = string.charCodeAt(offset) - 0x30;
-		if (digit < 0 || base <= digit) break;
-		total = base * total + digit;
-	}
-	return _Utils_Tuple2(offset, total);
-});
-
-
-var _Parser_consumeBase16 = F2(function(offset, string)
-{
-	for (var total = 0; offset < string.length; offset++)
-	{
-		var code = string.charCodeAt(offset);
-		if (0x30 <= code && code <= 0x39)
-		{
-			total = 16 * total + code - 0x30;
-		}
-		else if (0x41 <= code && code <= 0x46)
-		{
-			total = 16 * total + code - 55;
-		}
-		else if (0x61 <= code && code <= 0x66)
-		{
-			total = 16 * total + code - 87;
-		}
-		else
-		{
-			break;
-		}
-	}
-	return _Utils_Tuple2(offset, total);
-});
-
-
-
-// FIND STRING
-
-
-var _Parser_findSubString = F5(function(smallString, offset, row, col, bigString)
-{
-	var newOffset = bigString.indexOf(smallString, offset);
-	var target = newOffset < 0 ? bigString.length : newOffset + smallString.length;
-
-	while (offset < target)
-	{
-		var code = bigString.charCodeAt(offset++);
-		code === 0x000A /* \n */
-			? ( col=1, row++ )
-			: ( col++, (code & 0xF800) === 0xD800 && offset++ )
-	}
-
-	return _Utils_Tuple3(newOffset, row, col);
-});
-
-
 // CREATE
 
 var _Regex_never = /.^/;
@@ -5373,7 +5243,137 @@ function _Http_track(router, xhr, tracker)
 			size: event.lengthComputable ? $elm$core$Maybe$Just(event.total) : $elm$core$Maybe$Nothing
 		}))));
 	});
-}var $elm$core$Basics$EQ = {$: 'EQ'};
+}
+
+
+
+// STRINGS
+
+
+var _Parser_isSubString = F5(function(smallString, offset, row, col, bigString)
+{
+	var smallLength = smallString.length;
+	var isGood = offset + smallLength <= bigString.length;
+
+	for (var i = 0; isGood && i < smallLength; )
+	{
+		var code = bigString.charCodeAt(offset);
+		isGood =
+			smallString[i++] === bigString[offset++]
+			&& (
+				code === 0x000A /* \n */
+					? ( row++, col=1 )
+					: ( col++, (code & 0xF800) === 0xD800 ? smallString[i++] === bigString[offset++] : 1 )
+			)
+	}
+
+	return _Utils_Tuple3(isGood ? offset : -1, row, col);
+});
+
+
+
+// CHARS
+
+
+var _Parser_isSubChar = F3(function(predicate, offset, string)
+{
+	return (
+		string.length <= offset
+			? -1
+			:
+		(string.charCodeAt(offset) & 0xF800) === 0xD800
+			? (predicate(_Utils_chr(string.substr(offset, 2))) ? offset + 2 : -1)
+			:
+		(predicate(_Utils_chr(string[offset]))
+			? ((string[offset] === '\n') ? -2 : (offset + 1))
+			: -1
+		)
+	);
+});
+
+
+var _Parser_isAsciiCode = F3(function(code, offset, string)
+{
+	return string.charCodeAt(offset) === code;
+});
+
+
+
+// NUMBERS
+
+
+var _Parser_chompBase10 = F2(function(offset, string)
+{
+	for (; offset < string.length; offset++)
+	{
+		var code = string.charCodeAt(offset);
+		if (code < 0x30 || 0x39 < code)
+		{
+			return offset;
+		}
+	}
+	return offset;
+});
+
+
+var _Parser_consumeBase = F3(function(base, offset, string)
+{
+	for (var total = 0; offset < string.length; offset++)
+	{
+		var digit = string.charCodeAt(offset) - 0x30;
+		if (digit < 0 || base <= digit) break;
+		total = base * total + digit;
+	}
+	return _Utils_Tuple2(offset, total);
+});
+
+
+var _Parser_consumeBase16 = F2(function(offset, string)
+{
+	for (var total = 0; offset < string.length; offset++)
+	{
+		var code = string.charCodeAt(offset);
+		if (0x30 <= code && code <= 0x39)
+		{
+			total = 16 * total + code - 0x30;
+		}
+		else if (0x41 <= code && code <= 0x46)
+		{
+			total = 16 * total + code - 55;
+		}
+		else if (0x61 <= code && code <= 0x66)
+		{
+			total = 16 * total + code - 87;
+		}
+		else
+		{
+			break;
+		}
+	}
+	return _Utils_Tuple2(offset, total);
+});
+
+
+
+// FIND STRING
+
+
+var _Parser_findSubString = F5(function(smallString, offset, row, col, bigString)
+{
+	var newOffset = bigString.indexOf(smallString, offset);
+	var target = newOffset < 0 ? bigString.length : newOffset + smallString.length;
+
+	while (offset < target)
+	{
+		var code = bigString.charCodeAt(offset++);
+		code === 0x000A /* \n */
+			? ( col=1, row++ )
+			: ( col++, (code & 0xF800) === 0xD800 && offset++ )
+	}
+
+	return _Utils_Tuple3(newOffset, row, col);
+});
+var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$List$cons = _List_cons;
@@ -10974,758 +10974,16 @@ var $elm$core$Basics$never = function (_v0) {
 	}
 };
 var $elm$browser$Browser$element = _Browser_element;
-var $author$project$Main$Anim = function (a) {
-	return {$: 'Anim', a: a};
-};
-var $Garados007$elm_svg_parser$SvgParser$SvgElement = function (a) {
-	return {$: 'SvgElement', a: a};
-};
-var $elm$core$String$replace = F3(
-	function (before, after, string) {
-		return A2(
-			$elm$core$String$join,
-			after,
-			A2($elm$core$String$split, before, string));
-	});
-var $elm$parser$Parser$DeadEnd = F3(
-	function (row, col, problem) {
-		return {col: col, problem: problem, row: row};
-	});
-var $elm$parser$Parser$problemToDeadEnd = function (p) {
-	return A3($elm$parser$Parser$DeadEnd, p.row, p.col, p.problem);
-};
-var $elm$parser$Parser$Advanced$bagToList = F2(
-	function (bag, list) {
-		bagToList:
-		while (true) {
-			switch (bag.$) {
-				case 'Empty':
-					return list;
-				case 'AddRight':
-					var bag1 = bag.a;
-					var x = bag.b;
-					var $temp$bag = bag1,
-						$temp$list = A2($elm$core$List$cons, x, list);
-					bag = $temp$bag;
-					list = $temp$list;
-					continue bagToList;
-				default:
-					var bag1 = bag.a;
-					var bag2 = bag.b;
-					var $temp$bag = bag1,
-						$temp$list = A2($elm$parser$Parser$Advanced$bagToList, bag2, list);
-					bag = $temp$bag;
-					list = $temp$list;
-					continue bagToList;
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$run = F2(
-	function (_v0, src) {
-		var parse = _v0.a;
-		var _v1 = parse(
-			{col: 1, context: _List_Nil, indent: 1, offset: 0, row: 1, src: src});
-		if (_v1.$ === 'Good') {
-			var value = _v1.b;
-			return $elm$core$Result$Ok(value);
-		} else {
-			var bag = _v1.b;
-			return $elm$core$Result$Err(
-				A2($elm$parser$Parser$Advanced$bagToList, bag, _List_Nil));
-		}
-	});
-var $elm$parser$Parser$run = F2(
-	function (parser, source) {
-		var _v0 = A2($elm$parser$Parser$Advanced$run, parser, source);
-		if (_v0.$ === 'Ok') {
-			var a = _v0.a;
-			return $elm$core$Result$Ok(a);
-		} else {
-			var problems = _v0.a;
-			return $elm$core$Result$Err(
-				A2($elm$core$List$map, $elm$parser$Parser$problemToDeadEnd, problems));
-		}
-	});
-var $elm$parser$Parser$Advanced$Parser = function (a) {
-	return {$: 'Parser', a: a};
-};
-var $elm$parser$Parser$Advanced$Bad = F2(
-	function (a, b) {
-		return {$: 'Bad', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$Good = F3(
-	function (a, b, c) {
-		return {$: 'Good', a: a, b: b, c: c};
-	});
-var $elm$parser$Parser$Advanced$loopHelp = F4(
-	function (p, state, callback, s0) {
-		loopHelp:
-		while (true) {
-			var _v0 = callback(state);
-			var parse = _v0.a;
-			var _v1 = parse(s0);
-			if (_v1.$ === 'Good') {
-				var p1 = _v1.a;
-				var step = _v1.b;
-				var s1 = _v1.c;
-				if (step.$ === 'Loop') {
-					var newState = step.a;
-					var $temp$p = p || p1,
-						$temp$state = newState,
-						$temp$callback = callback,
-						$temp$s0 = s1;
-					p = $temp$p;
-					state = $temp$state;
-					callback = $temp$callback;
-					s0 = $temp$s0;
-					continue loopHelp;
-				} else {
-					var result = step.a;
-					return A3($elm$parser$Parser$Advanced$Good, p || p1, result, s1);
-				}
-			} else {
-				var p1 = _v1.a;
-				var x = _v1.b;
-				return A2($elm$parser$Parser$Advanced$Bad, p || p1, x);
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$loop = F2(
-	function (state, callback) {
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s) {
-				return A4($elm$parser$Parser$Advanced$loopHelp, false, state, callback, s);
-			});
-	});
-var $elm$parser$Parser$Advanced$map = F2(
-	function (func, _v0) {
-		var parse = _v0.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Good') {
-					var p = _v1.a;
-					var a = _v1.b;
-					var s1 = _v1.c;
-					return A3(
-						$elm$parser$Parser$Advanced$Good,
-						p,
-						func(a),
-						s1);
-				} else {
-					var p = _v1.a;
-					var x = _v1.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				}
-			});
-	});
-var $elm$parser$Parser$map = $elm$parser$Parser$Advanced$map;
-var $elm$parser$Parser$Advanced$Done = function (a) {
-	return {$: 'Done', a: a};
-};
-var $elm$parser$Parser$Advanced$Loop = function (a) {
-	return {$: 'Loop', a: a};
-};
-var $elm$parser$Parser$toAdvancedStep = function (step) {
-	if (step.$ === 'Loop') {
-		var s = step.a;
-		return $elm$parser$Parser$Advanced$Loop(s);
-	} else {
-		var a = step.a;
-		return $elm$parser$Parser$Advanced$Done(a);
-	}
-};
-var $elm$parser$Parser$loop = F2(
-	function (state, callback) {
-		return A2(
-			$elm$parser$Parser$Advanced$loop,
-			state,
-			function (s) {
-				return A2(
-					$elm$parser$Parser$map,
-					$elm$parser$Parser$toAdvancedStep,
-					callback(s));
-			});
-	});
-var $elm$parser$Parser$Done = function (a) {
-	return {$: 'Done', a: a};
-};
-var $elm$parser$Parser$Loop = function (a) {
-	return {$: 'Loop', a: a};
-};
-var $elm$parser$Parser$Advanced$map2 = F3(
-	function (func, _v0, _v1) {
-		var parseA = _v0.a;
-		var parseB = _v1.a;
-		return $elm$parser$Parser$Advanced$Parser(
-			function (s0) {
-				var _v2 = parseA(s0);
-				if (_v2.$ === 'Bad') {
-					var p = _v2.a;
-					var x = _v2.b;
-					return A2($elm$parser$Parser$Advanced$Bad, p, x);
-				} else {
-					var p1 = _v2.a;
-					var a = _v2.b;
-					var s1 = _v2.c;
-					var _v3 = parseB(s1);
-					if (_v3.$ === 'Bad') {
-						var p2 = _v3.a;
-						var x = _v3.b;
-						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
-					} else {
-						var p2 = _v3.a;
-						var b = _v3.b;
-						var s2 = _v3.c;
-						return A3(
-							$elm$parser$Parser$Advanced$Good,
-							p1 || p2,
-							A2(func, a, b),
-							s2);
-					}
-				}
-			});
-	});
-var $elm$parser$Parser$Advanced$keeper = F2(
-	function (parseFunc, parseArg) {
-		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$apL, parseFunc, parseArg);
-	});
-var $elm$parser$Parser$keeper = $elm$parser$Parser$Advanced$keeper;
-var $elm$parser$Parser$Advanced$Empty = {$: 'Empty'};
-var $elm$parser$Parser$Advanced$Append = F2(
-	function (a, b) {
-		return {$: 'Append', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$oneOfHelp = F3(
-	function (s0, bag, parsers) {
-		oneOfHelp:
-		while (true) {
-			if (!parsers.b) {
-				return A2($elm$parser$Parser$Advanced$Bad, false, bag);
-			} else {
-				var parse = parsers.a.a;
-				var remainingParsers = parsers.b;
-				var _v1 = parse(s0);
-				if (_v1.$ === 'Good') {
-					var step = _v1;
-					return step;
-				} else {
-					var step = _v1;
-					var p = step.a;
-					var x = step.b;
-					if (p) {
-						return step;
-					} else {
-						var $temp$s0 = s0,
-							$temp$bag = A2($elm$parser$Parser$Advanced$Append, bag, x),
-							$temp$parsers = remainingParsers;
-						s0 = $temp$s0;
-						bag = $temp$bag;
-						parsers = $temp$parsers;
-						continue oneOfHelp;
-					}
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$oneOf = function (parsers) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A3($elm$parser$Parser$Advanced$oneOfHelp, s, $elm$parser$Parser$Advanced$Empty, parsers);
-		});
-};
-var $elm$parser$Parser$oneOf = $elm$parser$Parser$Advanced$oneOf;
-var $elm$parser$Parser$Advanced$succeed = function (a) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A3($elm$parser$Parser$Advanced$Good, false, a, s);
-		});
-};
-var $elm$parser$Parser$succeed = $elm$parser$Parser$Advanced$succeed;
-var $author$project$Main$manyHelp = F2(
-	function (p, vs) {
-		return $elm$parser$Parser$oneOf(
-			_List_fromArray(
-				[
-					A2(
-					$elm$parser$Parser$keeper,
-					$elm$parser$Parser$succeed(
-						function (v) {
-							return $elm$parser$Parser$Loop(
-								A2($elm$core$List$cons, v, vs));
-						}),
-					p),
-					A2(
-					$elm$parser$Parser$map,
-					function (_v0) {
-						return $elm$parser$Parser$Done(
-							$elm$core$List$reverse(vs));
-					},
-					$elm$parser$Parser$succeed(_Utils_Tuple0))
-				]));
-	});
-var $author$project$Main$many = function (p) {
-	return A2(
-		$elm$parser$Parser$loop,
-		_List_Nil,
-		$author$project$Main$manyHelp(p));
-};
-var $elm$parser$Parser$ExpectingFloat = {$: 'ExpectingFloat'};
-var $elm$parser$Parser$Advanced$consumeBase = _Parser_consumeBase;
-var $elm$parser$Parser$Advanced$consumeBase16 = _Parser_consumeBase16;
-var $elm$parser$Parser$Advanced$bumpOffset = F2(
-	function (newOffset, s) {
-		return {col: s.col + (newOffset - s.offset), context: s.context, indent: s.indent, offset: newOffset, row: s.row, src: s.src};
-	});
-var $elm$parser$Parser$Advanced$chompBase10 = _Parser_chompBase10;
-var $elm$parser$Parser$Advanced$isAsciiCode = _Parser_isAsciiCode;
-var $elm$parser$Parser$Advanced$consumeExp = F2(
-	function (offset, src) {
-		if (A3($elm$parser$Parser$Advanced$isAsciiCode, 101, offset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 69, offset, src)) {
-			var eOffset = offset + 1;
-			var expOffset = (A3($elm$parser$Parser$Advanced$isAsciiCode, 43, eOffset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 45, eOffset, src)) ? (eOffset + 1) : eOffset;
-			var newOffset = A2($elm$parser$Parser$Advanced$chompBase10, expOffset, src);
-			return _Utils_eq(expOffset, newOffset) ? (-newOffset) : newOffset;
-		} else {
-			return offset;
-		}
-	});
-var $elm$parser$Parser$Advanced$consumeDotAndExp = F2(
-	function (offset, src) {
-		return A3($elm$parser$Parser$Advanced$isAsciiCode, 46, offset, src) ? A2(
-			$elm$parser$Parser$Advanced$consumeExp,
-			A2($elm$parser$Parser$Advanced$chompBase10, offset + 1, src),
-			src) : A2($elm$parser$Parser$Advanced$consumeExp, offset, src);
-	});
-var $elm$parser$Parser$Advanced$AddRight = F2(
-	function (a, b) {
-		return {$: 'AddRight', a: a, b: b};
-	});
-var $elm$parser$Parser$Advanced$DeadEnd = F4(
-	function (row, col, problem, contextStack) {
-		return {col: col, contextStack: contextStack, problem: problem, row: row};
-	});
-var $elm$parser$Parser$Advanced$fromState = F2(
-	function (s, x) {
-		return A2(
-			$elm$parser$Parser$Advanced$AddRight,
-			$elm$parser$Parser$Advanced$Empty,
-			A4($elm$parser$Parser$Advanced$DeadEnd, s.row, s.col, x, s.context));
-	});
-var $elm$parser$Parser$Advanced$finalizeInt = F5(
-	function (invalid, handler, startOffset, _v0, s) {
-		var endOffset = _v0.a;
-		var n = _v0.b;
-		if (handler.$ === 'Err') {
-			var x = handler.a;
-			return A2(
-				$elm$parser$Parser$Advanced$Bad,
-				true,
-				A2($elm$parser$Parser$Advanced$fromState, s, x));
-		} else {
-			var toValue = handler.a;
-			return _Utils_eq(startOffset, endOffset) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				_Utils_cmp(s.offset, startOffset) < 0,
-				A2($elm$parser$Parser$Advanced$fromState, s, invalid)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				true,
-				toValue(n),
-				A2($elm$parser$Parser$Advanced$bumpOffset, endOffset, s));
-		}
-	});
-var $elm$parser$Parser$Advanced$fromInfo = F4(
-	function (row, col, x, context) {
-		return A2(
-			$elm$parser$Parser$Advanced$AddRight,
-			$elm$parser$Parser$Advanced$Empty,
-			A4($elm$parser$Parser$Advanced$DeadEnd, row, col, x, context));
-	});
-var $elm$core$String$toFloat = _String_toFloat;
-var $elm$parser$Parser$Advanced$finalizeFloat = F6(
-	function (invalid, expecting, intSettings, floatSettings, intPair, s) {
-		var intOffset = intPair.a;
-		var floatOffset = A2($elm$parser$Parser$Advanced$consumeDotAndExp, intOffset, s.src);
-		if (floatOffset < 0) {
-			return A2(
-				$elm$parser$Parser$Advanced$Bad,
-				true,
-				A4($elm$parser$Parser$Advanced$fromInfo, s.row, s.col - (floatOffset + s.offset), invalid, s.context));
-		} else {
-			if (_Utils_eq(s.offset, floatOffset)) {
-				return A2(
-					$elm$parser$Parser$Advanced$Bad,
-					false,
-					A2($elm$parser$Parser$Advanced$fromState, s, expecting));
-			} else {
-				if (_Utils_eq(intOffset, floatOffset)) {
-					return A5($elm$parser$Parser$Advanced$finalizeInt, invalid, intSettings, s.offset, intPair, s);
-				} else {
-					if (floatSettings.$ === 'Err') {
-						var x = floatSettings.a;
-						return A2(
-							$elm$parser$Parser$Advanced$Bad,
-							true,
-							A2($elm$parser$Parser$Advanced$fromState, s, invalid));
-					} else {
-						var toValue = floatSettings.a;
-						var _v1 = $elm$core$String$toFloat(
-							A3($elm$core$String$slice, s.offset, floatOffset, s.src));
-						if (_v1.$ === 'Nothing') {
-							return A2(
-								$elm$parser$Parser$Advanced$Bad,
-								true,
-								A2($elm$parser$Parser$Advanced$fromState, s, invalid));
-						} else {
-							var n = _v1.a;
-							return A3(
-								$elm$parser$Parser$Advanced$Good,
-								true,
-								toValue(n),
-								A2($elm$parser$Parser$Advanced$bumpOffset, floatOffset, s));
-						}
-					}
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$number = function (c) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			if (A3($elm$parser$Parser$Advanced$isAsciiCode, 48, s.offset, s.src)) {
-				var zeroOffset = s.offset + 1;
-				var baseOffset = zeroOffset + 1;
-				return A3($elm$parser$Parser$Advanced$isAsciiCode, 120, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.hex,
-					baseOffset,
-					A2($elm$parser$Parser$Advanced$consumeBase16, baseOffset, s.src),
-					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 111, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.octal,
-					baseOffset,
-					A3($elm$parser$Parser$Advanced$consumeBase, 8, baseOffset, s.src),
-					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 98, zeroOffset, s.src) ? A5(
-					$elm$parser$Parser$Advanced$finalizeInt,
-					c.invalid,
-					c.binary,
-					baseOffset,
-					A3($elm$parser$Parser$Advanced$consumeBase, 2, baseOffset, s.src),
-					s) : A6(
-					$elm$parser$Parser$Advanced$finalizeFloat,
-					c.invalid,
-					c.expecting,
-					c._int,
-					c._float,
-					_Utils_Tuple2(zeroOffset, 0),
-					s)));
-			} else {
-				return A6(
-					$elm$parser$Parser$Advanced$finalizeFloat,
-					c.invalid,
-					c.expecting,
-					c._int,
-					c._float,
-					A3($elm$parser$Parser$Advanced$consumeBase, 10, s.offset, s.src),
-					s);
-			}
-		});
-};
-var $elm$parser$Parser$Advanced$float = F2(
-	function (expecting, invalid) {
-		return $elm$parser$Parser$Advanced$number(
-			{
-				binary: $elm$core$Result$Err(invalid),
-				expecting: expecting,
-				_float: $elm$core$Result$Ok($elm$core$Basics$identity),
-				hex: $elm$core$Result$Err(invalid),
-				_int: $elm$core$Result$Ok($elm$core$Basics$toFloat),
-				invalid: invalid,
-				octal: $elm$core$Result$Err(invalid)
-			});
-	});
-var $elm$parser$Parser$float = A2($elm$parser$Parser$Advanced$float, $elm$parser$Parser$ExpectingFloat, $elm$parser$Parser$ExpectingFloat);
-var $elm$parser$Parser$Advanced$ignorer = F2(
-	function (keepParser, ignoreParser) {
-		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$always, keepParser, ignoreParser);
-	});
-var $elm$parser$Parser$ignorer = $elm$parser$Parser$Advanced$ignorer;
-var $elm$parser$Parser$Expecting = function (a) {
-	return {$: 'Expecting', a: a};
-};
-var $elm$parser$Parser$Advanced$Token = F2(
-	function (a, b) {
-		return {$: 'Token', a: a, b: b};
-	});
-var $elm$parser$Parser$toToken = function (str) {
-	return A2(
-		$elm$parser$Parser$Advanced$Token,
-		str,
-		$elm$parser$Parser$Expecting(str));
-};
-var $elm$parser$Parser$Advanced$isSubString = _Parser_isSubString;
-var $elm$parser$Parser$Advanced$token = function (_v0) {
-	var str = _v0.a;
-	var expecting = _v0.b;
-	var progress = !$elm$core$String$isEmpty(str);
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, str, s.offset, s.row, s.col, s.src);
-			var newOffset = _v1.a;
-			var newRow = _v1.b;
-			var newCol = _v1.c;
-			return _Utils_eq(newOffset, -1) ? A2(
-				$elm$parser$Parser$Advanced$Bad,
-				false,
-				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
-				$elm$parser$Parser$Advanced$Good,
-				progress,
-				_Utils_Tuple0,
-				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
-		});
-};
-var $elm$parser$Parser$token = function (str) {
-	return $elm$parser$Parser$Advanced$token(
-		$elm$parser$Parser$toToken(str));
-};
-var $author$project$Main$anim = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$succeed($author$project$Main$Anim),
-		$elm$parser$Parser$token('--d:')),
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$float,
-		$elm$parser$Parser$token('s;')));
-var $elm$parser$Parser$Advanced$backtrackable = function (_v0) {
-	var parse = _v0.a;
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s0) {
-			var _v1 = parse(s0);
-			if (_v1.$ === 'Bad') {
-				var x = _v1.b;
-				return A2($elm$parser$Parser$Advanced$Bad, false, x);
-			} else {
-				var a = _v1.b;
-				var s1 = _v1.c;
-				return A3($elm$parser$Parser$Advanced$Good, false, a, s1);
-			}
-		});
-};
-var $elm$parser$Parser$backtrackable = $elm$parser$Parser$Advanced$backtrackable;
-var $author$project$Main$Stroke = F3(
-	function (a, b, c) {
-		return {$: 'Stroke', a: a, b: b, c: c};
-	});
-var $elm$parser$Parser$ExpectingInt = {$: 'ExpectingInt'};
-var $elm$parser$Parser$Advanced$int = F2(
-	function (expecting, invalid) {
-		return $elm$parser$Parser$Advanced$number(
-			{
-				binary: $elm$core$Result$Err(invalid),
-				expecting: expecting,
-				_float: $elm$core$Result$Err(invalid),
-				hex: $elm$core$Result$Err(invalid),
-				_int: $elm$core$Result$Ok($elm$core$Basics$identity),
-				invalid: invalid,
-				octal: $elm$core$Result$Err(invalid)
-			});
-	});
-var $elm$parser$Parser$int = A2($elm$parser$Parser$Advanced$int, $elm$parser$Parser$ExpectingInt, $elm$parser$Parser$ExpectingInt);
-var $elm$parser$Parser$Advanced$isSubChar = _Parser_isSubChar;
-var $elm$parser$Parser$Advanced$chompWhileHelp = F5(
-	function (isGood, offset, row, col, s0) {
-		chompWhileHelp:
-		while (true) {
-			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, s0.src);
-			if (_Utils_eq(newOffset, -1)) {
-				return A3(
-					$elm$parser$Parser$Advanced$Good,
-					_Utils_cmp(s0.offset, offset) < 0,
-					_Utils_Tuple0,
-					{col: col, context: s0.context, indent: s0.indent, offset: offset, row: row, src: s0.src});
-			} else {
-				if (_Utils_eq(newOffset, -2)) {
-					var $temp$isGood = isGood,
-						$temp$offset = offset + 1,
-						$temp$row = row + 1,
-						$temp$col = 1,
-						$temp$s0 = s0;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					s0 = $temp$s0;
-					continue chompWhileHelp;
-				} else {
-					var $temp$isGood = isGood,
-						$temp$offset = newOffset,
-						$temp$row = row,
-						$temp$col = col + 1,
-						$temp$s0 = s0;
-					isGood = $temp$isGood;
-					offset = $temp$offset;
-					row = $temp$row;
-					col = $temp$col;
-					s0 = $temp$s0;
-					continue chompWhileHelp;
-				}
-			}
-		}
-	});
-var $elm$parser$Parser$Advanced$chompWhile = function (isGood) {
-	return $elm$parser$Parser$Advanced$Parser(
-		function (s) {
-			return A5($elm$parser$Parser$Advanced$chompWhileHelp, isGood, s.offset, s.row, s.col, s);
-		});
-};
-var $elm$parser$Parser$Advanced$spaces = $elm$parser$Parser$Advanced$chompWhile(
-	function (c) {
-		return _Utils_eq(
-			c,
-			_Utils_chr(' ')) || (_Utils_eq(
-			c,
-			_Utils_chr('\n')) || _Utils_eq(
-			c,
-			_Utils_chr('\r')));
-	});
-var $elm$parser$Parser$spaces = $elm$parser$Parser$Advanced$spaces;
-var $author$project$Main$stroke = A2(
-	$elm$parser$Parser$keeper,
-	A2(
-		$elm$parser$Parser$keeper,
-		A2(
-			$elm$parser$Parser$keeper,
-			A2(
-				$elm$parser$Parser$ignorer,
-				A2(
-					$elm$parser$Parser$ignorer,
-					$elm$parser$Parser$succeed($author$project$Main$Stroke),
-					$elm$parser$Parser$spaces),
-				$elm$parser$Parser$token('stroke: rgb(')),
-			A2(
-				$elm$parser$Parser$ignorer,
-				$elm$parser$Parser$int,
-				$elm$parser$Parser$token(', '))),
-		A2(
-			$elm$parser$Parser$ignorer,
-			$elm$parser$Parser$int,
-			$elm$parser$Parser$token(', '))),
-	A2(
-		$elm$parser$Parser$ignorer,
-		$elm$parser$Parser$int,
-		$elm$parser$Parser$token(');')));
-var $author$project$Main$style = $elm$parser$Parser$oneOf(
-	_List_fromArray(
-		[
-			$elm$parser$Parser$backtrackable($author$project$Main$anim),
-			$author$project$Main$stroke
-		]));
-var $author$project$Main$styles = $author$project$Main$many($author$project$Main$style);
-var $author$project$Main$styleToStr = function (s) {
-	if (s.$ === 'Anim') {
-		var f = s.a;
-		return '--d:' + ($elm$core$String$fromFloat(f) + 's;');
-	} else {
-		var r = s.a;
-		var g = s.b;
-		var b = s.c;
-		return 'stroke: rgb(' + ($elm$core$String$fromInt(r) + (', ' + ($elm$core$String$fromInt(g) + (', ' + ($elm$core$String$fromInt(g) + ');')))));
-	}
-};
-var $author$project$Main$stylesToStr = function (ss) {
-	return A2(
-		$elm$core$String$join,
-		' ',
-		A2($elm$core$List$map, $author$project$Main$styleToStr, ss));
-};
-var $elm$core$Result$withDefault = F2(
-	function (def, result) {
-		if (result.$ === 'Ok') {
-			var a = result.a;
-			return a;
-		} else {
-			return def;
-		}
-	});
-var $author$project$Main$toggleAnimation = function (model) {
-	var newStyleBlock = A2($elm$core$String$contains, '--t:0.8s;', model.parsedSvg.styleBlock) ? A3($elm$core$String$replace, '--t:0.8s;', '--t:0s;', model.parsedSvg.styleBlock) : A3($elm$core$String$replace, '--t:0s;', '--t:0.8s;', model.parsedSvg.styleBlock);
-	var newNodeStyle = function (attr) {
-		if (attr.a === 'style') {
-			var v = attr.b;
-			return _Utils_Tuple2(
-				'style',
-				$author$project$Main$stylesToStr(
-					A2(
-						$elm$core$List$map,
-						function (s) {
-							if (s.$ === 'Anim') {
-								var d = s.a;
-								return $author$project$Main$Anim(0);
-							} else {
-								return s;
-							}
-						},
-						A2(
-							$elm$core$Result$withDefault,
-							_List_Nil,
-							A2($elm$parser$Parser$run, $author$project$Main$styles, v)))));
-		} else {
-			return attr;
-		}
-	};
-	var newSvg = A2(
-		$elm$core$List$map,
-		function (node) {
-			if (node.$ === 'SvgElement') {
-				var el = node.a;
-				return $Garados007$elm_svg_parser$SvgParser$SvgElement(
-					_Utils_update(
-						el,
-						{
-							children: A2(
-								$elm$core$List$map,
-								function (c) {
-									if (c.$ === 'SvgElement') {
-										var el_ = c.a;
-										return $Garados007$elm_svg_parser$SvgParser$SvgElement(
-											_Utils_update(
-												el_,
-												{
-													attributes: A2($elm$core$List$map, newNodeStyle, el_.attributes)
-												}));
-									} else {
-										return c;
-									}
-								},
-								el.children)
-						}));
-			} else {
-				var other = node;
-				return other;
-			}
-		},
-		model.parsedSvg.svg);
-	return _Utils_update(
-		model,
-		{
-			parsedSvg: {styleBlock: newStyleBlock, svg: newSvg}
-		});
-};
 var $author$project$Main$initialModel = function (_v0) {
 	return _Utils_Tuple2(
-		$author$project$Main$toggleAnimation(
-			{
-				animate: true,
-				highlightedStrokes: _List_Nil,
-				kanji: $elm$core$Maybe$Nothing,
-				kanjiInputBuffer: $elm$core$Maybe$Nothing,
-				parsedSvg: {styleBlock: '', svg: _List_Nil},
-				strokeInputBuffer: $elm$core$Maybe$Nothing
-			}),
+		{
+			animate: true,
+			highlightedStrokes: _List_Nil,
+			kanji: $elm$core$Maybe$Nothing,
+			kanjiInputBuffer: $elm$core$Maybe$Nothing,
+			parsedSvg: {styleBlock: '', svg: _List_Nil},
+			strokeInputBuffer: $elm$core$Maybe$Nothing
+		},
 		$elm$core$Platform$Cmd$none);
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
@@ -11808,7 +11066,13 @@ var $elmcraft$core_extra$String$Extra$leftOf = F2(
 						'^(.*?)' + $elmcraft$core_extra$String$Extra$regexEscape(pattern)),
 					string)));
 	});
-var $elm$core$Debug$log = _Debug_log;
+var $elm$core$String$replace = F3(
+	function (before, after, string) {
+		return A2(
+			$elm$core$String$join,
+			after,
+			A2($elm$core$String$split, before, string));
+	});
 var $elmcraft$core_extra$String$Extra$rightOf = F2(
 	function (pattern, string) {
 		return $elm$core$String$concat(
@@ -11871,12 +11135,13 @@ var $elmcraft$core_extra$String$Extra$rightOfBack = F2(
 		}
 	});
 var $author$project$Main$extractStyleBlock = function (s) {
-	var flat = A3($elm$core$String$replace, '\n', '', s);
-	var prefix = A2(
-		$elm$core$Debug$log,
-		'prefix',
-		A2($elmcraft$core_extra$String$Extra$leftOf, '<style>', flat));
-	var styleBlock = A2(
+	var flat = A3(
+		$elm$core$String$replace,
+		'\'',
+		'\"',
+		A3($elm$core$String$replace, '\n', '', s));
+	var prefix = A2($elmcraft$core_extra$String$Extra$leftOf, '<style>', flat);
+	var styleBlock = A2($elm$core$String$contains, 'CDATA', flat) ? A2(
 		$elm$core$String$dropRight,
 		$elm$core$String$length(']]>'),
 		A2(
@@ -11885,7 +11150,10 @@ var $author$project$Main$extractStyleBlock = function (s) {
 			A2(
 				$elmcraft$core_extra$String$Extra$leftOf,
 				'</style>',
-				A2($elmcraft$core_extra$String$Extra$rightOf, '<style>', flat))));
+				A2($elmcraft$core_extra$String$Extra$rightOf, '<style>', flat)))) : A2(
+		$elmcraft$core_extra$String$Extra$leftOf,
+		'</style>',
+		A2($elmcraft$core_extra$String$Extra$rightOf, '<style>', flat));
 	var suffix = A2($elmcraft$core_extra$String$Extra$rightOfBack, '</style>', flat);
 	return _Utils_Tuple2(
 		_Utils_ap(prefix, suffix),
@@ -12234,18 +11502,18 @@ var $andre_dietrich$parser_combinators$Combine$andMap = F2(
 			A2($pilatch$flip$Flip$flip, $andre_dietrich$parser_combinators$Combine$map, rp),
 			lp);
 	});
-var $Garados007$elm_svg_parser$SvgParser$flip = F3(
+var $author$project$SvgParserVendored$flip = F3(
 	function (func, b, a) {
 		return A2(func, a, b);
 	});
-var $Garados007$elm_svg_parser$SvgParser$andMapRight = F2(
+var $author$project$SvgParserVendored$andMapRight = F2(
 	function (lp, rp) {
 		return A2(
 			$andre_dietrich$parser_combinators$Combine$andMap,
 			rp,
 			A2(
 				$andre_dietrich$parser_combinators$Combine$map,
-				$Garados007$elm_svg_parser$SvgParser$flip($elm$core$Basics$always),
+				$author$project$SvgParserVendored$flip($elm$core$Basics$always),
 				lp));
 	});
 var $andre_dietrich$parser_combinators$Combine$regexer = F5(
@@ -12303,8 +11571,8 @@ var $andre_dietrich$parser_combinators$Combine$whitespace = A2(
 	$andre_dietrich$parser_combinators$Combine$onerror,
 	'optional whitespace',
 	$andre_dietrich$parser_combinators$Combine$regex('\\s*'));
-var $Garados007$elm_svg_parser$SvgParser$doctypeDeclarationParser = A2(
-	$Garados007$elm_svg_parser$SvgParser$andMapRight,
+var $author$project$SvgParserVendored$doctypeDeclarationParser = A2(
+	$author$project$SvgParserVendored$andMapRight,
 	$andre_dietrich$parser_combinators$Combine$whitespace,
 	$andre_dietrich$parser_combinators$Combine$regex('<!DOCTYPE(?:\"(?:\\\\.|[^\"])*\"|\'(?:\\\\.|[^\'])*\'|[^>])*>'));
 var $andre_dietrich$parser_combinators$Combine$many = function (p) {
@@ -12352,7 +11620,10 @@ var $andre_dietrich$parser_combinators$Combine$many = function (p) {
 					$elm$core$Result$Ok(res));
 			}));
 };
-var $Garados007$elm_svg_parser$SvgParser$andMapLeft = F2(
+var $author$project$SvgParserVendored$SvgElement = function (a) {
+	return {$: 'SvgElement', a: a};
+};
+var $author$project$SvgParserVendored$andMapLeft = F2(
 	function (lp, rp) {
 		return A2(
 			$andre_dietrich$parser_combinators$Combine$andMap,
@@ -12396,7 +11667,7 @@ var $andre_dietrich$parser_combinators$Combine$or = F2(
 var $andre_dietrich$parser_combinators$Combine$choice = function (xs) {
 	return A3($elm$core$List$foldr, $andre_dietrich$parser_combinators$Combine$or, $andre_dietrich$parser_combinators$Combine$emptyErr, xs);
 };
-var $Garados007$elm_svg_parser$SvgParser$SvgComment = function (a) {
+var $author$project$SvgParserVendored$SvgComment = function (a) {
 	return {$: 'SvgComment', a: a};
 };
 var $andre_dietrich$parser_combinators$Combine$primitive = $andre_dietrich$parser_combinators$Combine$Parser;
@@ -12520,15 +11791,15 @@ var $andre_dietrich$parser_combinators$Combine$string = function (s) {
 				}
 			}));
 };
-var $Garados007$elm_svg_parser$SvgParser$commentParser = $andre_dietrich$parser_combinators$Combine$lazy(
+var $author$project$SvgParserVendored$commentParser = $andre_dietrich$parser_combinators$Combine$lazy(
 	function (_v0) {
 		return A2(
 			$andre_dietrich$parser_combinators$Combine$map,
-			A2($elm$core$Basics$composeL, $Garados007$elm_svg_parser$SvgParser$SvgComment, $elm$core$String$fromList),
+			A2($elm$core$Basics$composeL, $author$project$SvgParserVendored$SvgComment, $elm$core$String$fromList),
 			A2(
-				$Garados007$elm_svg_parser$SvgParser$andMapRight,
+				$author$project$SvgParserVendored$andMapRight,
 				A2(
-					$Garados007$elm_svg_parser$SvgParser$andMapRight,
+					$author$project$SvgParserVendored$andMapRight,
 					$andre_dietrich$parser_combinators$Combine$whitespace,
 					$andre_dietrich$parser_combinators$Combine$string('<!--')),
 				A2(
@@ -12536,7 +11807,7 @@ var $Garados007$elm_svg_parser$SvgParser$commentParser = $andre_dietrich$parser_
 					$andre_dietrich$parser_combinators$Combine$Char$anyChar,
 					$andre_dietrich$parser_combinators$Combine$string('-->'))));
 	});
-var $Garados007$elm_svg_parser$SvgParser$Element = F3(
+var $author$project$SvgParserVendored$Element = F3(
 	function (name, attributes, children) {
 		return {attributes: attributes, children: children, name: name};
 	});
@@ -12551,15 +11822,15 @@ var $elm$core$Tuple$pair = F2(
 	function (a, b) {
 		return _Utils_Tuple2(a, b);
 	});
-var $Garados007$elm_svg_parser$SvgParser$attributeParser = A2(
+var $author$project$SvgParserVendored$attributeParser = A2(
 	$andre_dietrich$parser_combinators$Combine$andMap,
 	A2(
 		$andre_dietrich$parser_combinators$Combine$optional,
 		'',
 		A2(
-			$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+			$author$project$SvgParserVendored$andMapLeft,
 			A2(
-				$Garados007$elm_svg_parser$SvgParser$andMapRight,
+				$author$project$SvgParserVendored$andMapRight,
 				$andre_dietrich$parser_combinators$Combine$string('=\"'),
 				$andre_dietrich$parser_combinators$Combine$regex('[^\"]*')),
 			$andre_dietrich$parser_combinators$Combine$string('\"'))),
@@ -12592,8 +11863,8 @@ var $andre_dietrich$parser_combinators$Combine$sepBy = F2(
 			A2($andre_dietrich$parser_combinators$Combine$sepBy1, sep, p),
 			$andre_dietrich$parser_combinators$Combine$succeed(_List_Nil));
 	});
-var $Garados007$elm_svg_parser$SvgParser$openingParser = A3(
-	$Garados007$elm_svg_parser$SvgParser$flip,
+var $author$project$SvgParserVendored$openingParser = A3(
+	$author$project$SvgParserVendored$flip,
 	$andre_dietrich$parser_combinators$Combine$andMap,
 	A2(
 		$andre_dietrich$parser_combinators$Combine$andMap,
@@ -12602,30 +11873,30 @@ var $Garados007$elm_svg_parser$SvgParser$openingParser = A3(
 			$andre_dietrich$parser_combinators$Combine$map,
 			F3(
 				function (_v0, tagName, attributes) {
-					return A3($Garados007$elm_svg_parser$SvgParser$Element, tagName, attributes, _List_Nil);
+					return A3($author$project$SvgParserVendored$Element, tagName, attributes, _List_Nil);
 				}),
 			$andre_dietrich$parser_combinators$Combine$string('<'))),
 	A2(
-		$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+		$author$project$SvgParserVendored$andMapLeft,
 		A2(
-			$Garados007$elm_svg_parser$SvgParser$andMapRight,
+			$author$project$SvgParserVendored$andMapRight,
 			$andre_dietrich$parser_combinators$Combine$whitespace,
-			A2($andre_dietrich$parser_combinators$Combine$sepBy, $andre_dietrich$parser_combinators$Combine$whitespace, $Garados007$elm_svg_parser$SvgParser$attributeParser)),
+			A2($andre_dietrich$parser_combinators$Combine$sepBy, $andre_dietrich$parser_combinators$Combine$whitespace, $author$project$SvgParserVendored$attributeParser)),
 		$andre_dietrich$parser_combinators$Combine$whitespace));
-var $Garados007$elm_svg_parser$SvgParser$SvgText = function (a) {
+var $author$project$SvgParserVendored$SvgText = function (a) {
 	return {$: 'SvgText', a: a};
 };
-var $Garados007$elm_svg_parser$SvgParser$textParser = $andre_dietrich$parser_combinators$Combine$lazy(
+var $author$project$SvgParserVendored$textParser = $andre_dietrich$parser_combinators$Combine$lazy(
 	function (_v0) {
 		return A2(
 			$andre_dietrich$parser_combinators$Combine$map,
-			$Garados007$elm_svg_parser$SvgParser$SvgText,
+			$author$project$SvgParserVendored$SvgText,
 			A2(
-				$Garados007$elm_svg_parser$SvgParser$andMapRight,
+				$author$project$SvgParserVendored$andMapRight,
 				$andre_dietrich$parser_combinators$Combine$whitespace,
 				$andre_dietrich$parser_combinators$Combine$regex('[^<]+')));
 	});
-var $Garados007$elm_svg_parser$SvgParser$closingOrChildrenParser = function (element) {
+var $author$project$SvgParserVendored$closingOrChildrenParser = function (element) {
 	var childrenParser = A2(
 		$andre_dietrich$parser_combinators$Combine$map,
 		function (children) {
@@ -12634,17 +11905,17 @@ var $Garados007$elm_svg_parser$SvgParser$closingOrChildrenParser = function (ele
 				{children: children});
 		},
 		A2(
-			$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+			$author$project$SvgParserVendored$andMapLeft,
 			A2(
-				$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+				$author$project$SvgParserVendored$andMapLeft,
 				A2(
-					$Garados007$elm_svg_parser$SvgParser$andMapRight,
+					$author$project$SvgParserVendored$andMapRight,
 					A2(
-						$Garados007$elm_svg_parser$SvgParser$andMapRight,
+						$author$project$SvgParserVendored$andMapRight,
 						$andre_dietrich$parser_combinators$Combine$whitespace,
 						$andre_dietrich$parser_combinators$Combine$string('>')),
 					$andre_dietrich$parser_combinators$Combine$many(
-						$Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser())),
+						$author$project$SvgParserVendored$cyclic$nodeParser())),
 				$andre_dietrich$parser_combinators$Combine$whitespace),
 			$andre_dietrich$parser_combinators$Combine$string('</' + (element.name + '>'))));
 	return $andre_dietrich$parser_combinators$Combine$lazy(
@@ -12653,9 +11924,9 @@ var $Garados007$elm_svg_parser$SvgParser$closingOrChildrenParser = function (ele
 				_List_fromArray(
 					[
 						A2(
-						$Garados007$elm_svg_parser$SvgParser$andMapRight,
+						$author$project$SvgParserVendored$andMapRight,
 						A2(
-							$Garados007$elm_svg_parser$SvgParser$andMapRight,
+							$author$project$SvgParserVendored$andMapRight,
 							$andre_dietrich$parser_combinators$Combine$whitespace,
 							$andre_dietrich$parser_combinators$Combine$string('/>')),
 						$andre_dietrich$parser_combinators$Combine$succeed(element)),
@@ -12663,47 +11934,47 @@ var $Garados007$elm_svg_parser$SvgParser$closingOrChildrenParser = function (ele
 					]));
 		});
 };
-function $Garados007$elm_svg_parser$SvgParser$cyclic$elementParser() {
+function $author$project$SvgParserVendored$cyclic$elementParser() {
 	return $andre_dietrich$parser_combinators$Combine$lazy(
 		function (_v1) {
 			return A2(
 				$andre_dietrich$parser_combinators$Combine$map,
-				$Garados007$elm_svg_parser$SvgParser$SvgElement,
+				$author$project$SvgParserVendored$SvgElement,
 				A2(
 					$andre_dietrich$parser_combinators$Combine$andThen,
-					$Garados007$elm_svg_parser$SvgParser$closingOrChildrenParser,
+					$author$project$SvgParserVendored$closingOrChildrenParser,
 					A2(
 						$andre_dietrich$parser_combinators$Combine$andMap,
-						$Garados007$elm_svg_parser$SvgParser$openingParser,
+						$author$project$SvgParserVendored$openingParser,
 						A2(
 							$andre_dietrich$parser_combinators$Combine$map,
-							$Garados007$elm_svg_parser$SvgParser$flip($elm$core$Basics$always),
+							$author$project$SvgParserVendored$flip($elm$core$Basics$always),
 							$andre_dietrich$parser_combinators$Combine$whitespace))));
 		});
 }
-function $Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser() {
+function $author$project$SvgParserVendored$cyclic$nodeParser() {
 	return $andre_dietrich$parser_combinators$Combine$lazy(
 		function (_v0) {
 			return $andre_dietrich$parser_combinators$Combine$choice(
 				_List_fromArray(
 					[
-						$Garados007$elm_svg_parser$SvgParser$textParser,
-						$Garados007$elm_svg_parser$SvgParser$commentParser,
-						$Garados007$elm_svg_parser$SvgParser$cyclic$elementParser()
+						$author$project$SvgParserVendored$textParser,
+						$author$project$SvgParserVendored$commentParser,
+						$author$project$SvgParserVendored$cyclic$elementParser()
 					]));
 		});
 }
 try {
-	var $Garados007$elm_svg_parser$SvgParser$elementParser = $Garados007$elm_svg_parser$SvgParser$cyclic$elementParser();
-	$Garados007$elm_svg_parser$SvgParser$cyclic$elementParser = function () {
-		return $Garados007$elm_svg_parser$SvgParser$elementParser;
+	var $author$project$SvgParserVendored$elementParser = $author$project$SvgParserVendored$cyclic$elementParser();
+	$author$project$SvgParserVendored$cyclic$elementParser = function () {
+		return $author$project$SvgParserVendored$elementParser;
 	};
-	var $Garados007$elm_svg_parser$SvgParser$nodeParser = $Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser();
-	$Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser = function () {
-		return $Garados007$elm_svg_parser$SvgParser$nodeParser;
+	var $author$project$SvgParserVendored$nodeParser = $author$project$SvgParserVendored$cyclic$nodeParser();
+	$author$project$SvgParserVendored$cyclic$nodeParser = function () {
+		return $author$project$SvgParserVendored$nodeParser;
 	};
 } catch ($) {
-	throw 'Some top-level definitions from `SvgParser` are causing infinite recursion:\n\n  ┌─────┐\n  │    closingOrChildrenParser\n  │     ↓\n  │    elementParser\n  │     ↓\n  │    nodeParser\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+	throw 'Some top-level definitions from `SvgParserVendored` are causing infinite recursion:\n\n  ┌─────┐\n  │    closingOrChildrenParser\n  │     ↓\n  │    elementParser\n  │     ↓\n  │    nodeParser\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
 var $andre_dietrich$parser_combinators$Combine$InputStream = F3(
 	function (data, input, position) {
 		return {data: data, input: input, position: position};
@@ -12732,29 +12003,29 @@ var $andre_dietrich$parser_combinators$Combine$runParser = F3(
 				_Utils_Tuple3(state, stream, ms));
 		}
 	});
-var $Garados007$elm_svg_parser$SvgParser$xmlDeclarationParser = A2(
+var $author$project$SvgParserVendored$xmlDeclarationParser = A2(
 	$andre_dietrich$parser_combinators$Combine$map,
 	$elm$core$String$fromList,
 	A2(
-		$Garados007$elm_svg_parser$SvgParser$andMapRight,
+		$author$project$SvgParserVendored$andMapRight,
 		A2(
-			$Garados007$elm_svg_parser$SvgParser$andMapRight,
+			$author$project$SvgParserVendored$andMapRight,
 			$andre_dietrich$parser_combinators$Combine$whitespace,
 			$andre_dietrich$parser_combinators$Combine$string('<?xml')),
 		A2(
 			$andre_dietrich$parser_combinators$Combine$manyTill,
 			$andre_dietrich$parser_combinators$Combine$Char$anyChar,
 			$andre_dietrich$parser_combinators$Combine$string('?>'))));
-var $Garados007$elm_svg_parser$SvgParser$parseToNodes = function (input) {
+var $author$project$SvgParserVendored$parseToNodes = function (input) {
 	var _v0 = A3(
 		$andre_dietrich$parser_combinators$Combine$runParser,
 		A2(
-			$Garados007$elm_svg_parser$SvgParser$andMapRight,
-			A2($andre_dietrich$parser_combinators$Combine$optional, '', $Garados007$elm_svg_parser$SvgParser$xmlDeclarationParser),
+			$author$project$SvgParserVendored$andMapRight,
+			A2($andre_dietrich$parser_combinators$Combine$optional, '', $author$project$SvgParserVendored$xmlDeclarationParser),
 			A2(
-				$Garados007$elm_svg_parser$SvgParser$andMapRight,
-				A2($andre_dietrich$parser_combinators$Combine$optional, '', $Garados007$elm_svg_parser$SvgParser$doctypeDeclarationParser),
-				$andre_dietrich$parser_combinators$Combine$many($Garados007$elm_svg_parser$SvgParser$nodeParser))),
+				$author$project$SvgParserVendored$andMapRight,
+				A2($andre_dietrich$parser_combinators$Combine$optional, '', $author$project$SvgParserVendored$doctypeDeclarationParser),
+				$andre_dietrich$parser_combinators$Combine$many($author$project$SvgParserVendored$nodeParser))),
 		_List_Nil,
 		input);
 	if (_v0.$ === 'Ok') {
@@ -12767,6 +12038,400 @@ var $Garados007$elm_svg_parser$SvgParser$parseToNodes = function (input) {
 		return $elm$core$Result$Err(
 			A2($elm$core$String$join, ' or ', errors));
 	}
+};
+var $elm$parser$Parser$DeadEnd = F3(
+	function (row, col, problem) {
+		return {col: col, problem: problem, row: row};
+	});
+var $elm$parser$Parser$problemToDeadEnd = function (p) {
+	return A3($elm$parser$Parser$DeadEnd, p.row, p.col, p.problem);
+};
+var $elm$parser$Parser$Advanced$bagToList = F2(
+	function (bag, list) {
+		bagToList:
+		while (true) {
+			switch (bag.$) {
+				case 'Empty':
+					return list;
+				case 'AddRight':
+					var bag1 = bag.a;
+					var x = bag.b;
+					var $temp$bag = bag1,
+						$temp$list = A2($elm$core$List$cons, x, list);
+					bag = $temp$bag;
+					list = $temp$list;
+					continue bagToList;
+				default:
+					var bag1 = bag.a;
+					var bag2 = bag.b;
+					var $temp$bag = bag1,
+						$temp$list = A2($elm$parser$Parser$Advanced$bagToList, bag2, list);
+					bag = $temp$bag;
+					list = $temp$list;
+					continue bagToList;
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$run = F2(
+	function (_v0, src) {
+		var parse = _v0.a;
+		var _v1 = parse(
+			{col: 1, context: _List_Nil, indent: 1, offset: 0, row: 1, src: src});
+		if (_v1.$ === 'Good') {
+			var value = _v1.b;
+			return $elm$core$Result$Ok(value);
+		} else {
+			var bag = _v1.b;
+			return $elm$core$Result$Err(
+				A2($elm$parser$Parser$Advanced$bagToList, bag, _List_Nil));
+		}
+	});
+var $elm$parser$Parser$run = F2(
+	function (parser, source) {
+		var _v0 = A2($elm$parser$Parser$Advanced$run, parser, source);
+		if (_v0.$ === 'Ok') {
+			var a = _v0.a;
+			return $elm$core$Result$Ok(a);
+		} else {
+			var problems = _v0.a;
+			return $elm$core$Result$Err(
+				A2($elm$core$List$map, $elm$parser$Parser$problemToDeadEnd, problems));
+		}
+	});
+var $elm$parser$Parser$Advanced$Bad = F2(
+	function (a, b) {
+		return {$: 'Bad', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$Good = F3(
+	function (a, b, c) {
+		return {$: 'Good', a: a, b: b, c: c};
+	});
+var $elm$parser$Parser$Advanced$Parser = function (a) {
+	return {$: 'Parser', a: a};
+};
+var $elm$parser$Parser$Advanced$map2 = F3(
+	function (func, _v0, _v1) {
+		var parseA = _v0.a;
+		var parseB = _v1.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v2 = parseA(s0);
+				if (_v2.$ === 'Bad') {
+					var p = _v2.a;
+					var x = _v2.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				} else {
+					var p1 = _v2.a;
+					var a = _v2.b;
+					var s1 = _v2.c;
+					var _v3 = parseB(s1);
+					if (_v3.$ === 'Bad') {
+						var p2 = _v3.a;
+						var x = _v3.b;
+						return A2($elm$parser$Parser$Advanced$Bad, p1 || p2, x);
+					} else {
+						var p2 = _v3.a;
+						var b = _v3.b;
+						var s2 = _v3.c;
+						return A3(
+							$elm$parser$Parser$Advanced$Good,
+							p1 || p2,
+							A2(func, a, b),
+							s2);
+					}
+				}
+			});
+	});
+var $elm$parser$Parser$Advanced$ignorer = F2(
+	function (keepParser, ignoreParser) {
+		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$always, keepParser, ignoreParser);
+	});
+var $elm$parser$Parser$ignorer = $elm$parser$Parser$Advanced$ignorer;
+var $elm$parser$Parser$ExpectingInt = {$: 'ExpectingInt'};
+var $elm$parser$Parser$Advanced$consumeBase = _Parser_consumeBase;
+var $elm$parser$Parser$Advanced$consumeBase16 = _Parser_consumeBase16;
+var $elm$parser$Parser$Advanced$bumpOffset = F2(
+	function (newOffset, s) {
+		return {col: s.col + (newOffset - s.offset), context: s.context, indent: s.indent, offset: newOffset, row: s.row, src: s.src};
+	});
+var $elm$parser$Parser$Advanced$chompBase10 = _Parser_chompBase10;
+var $elm$parser$Parser$Advanced$isAsciiCode = _Parser_isAsciiCode;
+var $elm$parser$Parser$Advanced$consumeExp = F2(
+	function (offset, src) {
+		if (A3($elm$parser$Parser$Advanced$isAsciiCode, 101, offset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 69, offset, src)) {
+			var eOffset = offset + 1;
+			var expOffset = (A3($elm$parser$Parser$Advanced$isAsciiCode, 43, eOffset, src) || A3($elm$parser$Parser$Advanced$isAsciiCode, 45, eOffset, src)) ? (eOffset + 1) : eOffset;
+			var newOffset = A2($elm$parser$Parser$Advanced$chompBase10, expOffset, src);
+			return _Utils_eq(expOffset, newOffset) ? (-newOffset) : newOffset;
+		} else {
+			return offset;
+		}
+	});
+var $elm$parser$Parser$Advanced$consumeDotAndExp = F2(
+	function (offset, src) {
+		return A3($elm$parser$Parser$Advanced$isAsciiCode, 46, offset, src) ? A2(
+			$elm$parser$Parser$Advanced$consumeExp,
+			A2($elm$parser$Parser$Advanced$chompBase10, offset + 1, src),
+			src) : A2($elm$parser$Parser$Advanced$consumeExp, offset, src);
+	});
+var $elm$parser$Parser$Advanced$AddRight = F2(
+	function (a, b) {
+		return {$: 'AddRight', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$DeadEnd = F4(
+	function (row, col, problem, contextStack) {
+		return {col: col, contextStack: contextStack, problem: problem, row: row};
+	});
+var $elm$parser$Parser$Advanced$Empty = {$: 'Empty'};
+var $elm$parser$Parser$Advanced$fromState = F2(
+	function (s, x) {
+		return A2(
+			$elm$parser$Parser$Advanced$AddRight,
+			$elm$parser$Parser$Advanced$Empty,
+			A4($elm$parser$Parser$Advanced$DeadEnd, s.row, s.col, x, s.context));
+	});
+var $elm$parser$Parser$Advanced$finalizeInt = F5(
+	function (invalid, handler, startOffset, _v0, s) {
+		var endOffset = _v0.a;
+		var n = _v0.b;
+		if (handler.$ === 'Err') {
+			var x = handler.a;
+			return A2(
+				$elm$parser$Parser$Advanced$Bad,
+				true,
+				A2($elm$parser$Parser$Advanced$fromState, s, x));
+		} else {
+			var toValue = handler.a;
+			return _Utils_eq(startOffset, endOffset) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				_Utils_cmp(s.offset, startOffset) < 0,
+				A2($elm$parser$Parser$Advanced$fromState, s, invalid)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				true,
+				toValue(n),
+				A2($elm$parser$Parser$Advanced$bumpOffset, endOffset, s));
+		}
+	});
+var $elm$parser$Parser$Advanced$fromInfo = F4(
+	function (row, col, x, context) {
+		return A2(
+			$elm$parser$Parser$Advanced$AddRight,
+			$elm$parser$Parser$Advanced$Empty,
+			A4($elm$parser$Parser$Advanced$DeadEnd, row, col, x, context));
+	});
+var $elm$core$String$toFloat = _String_toFloat;
+var $elm$parser$Parser$Advanced$finalizeFloat = F6(
+	function (invalid, expecting, intSettings, floatSettings, intPair, s) {
+		var intOffset = intPair.a;
+		var floatOffset = A2($elm$parser$Parser$Advanced$consumeDotAndExp, intOffset, s.src);
+		if (floatOffset < 0) {
+			return A2(
+				$elm$parser$Parser$Advanced$Bad,
+				true,
+				A4($elm$parser$Parser$Advanced$fromInfo, s.row, s.col - (floatOffset + s.offset), invalid, s.context));
+		} else {
+			if (_Utils_eq(s.offset, floatOffset)) {
+				return A2(
+					$elm$parser$Parser$Advanced$Bad,
+					false,
+					A2($elm$parser$Parser$Advanced$fromState, s, expecting));
+			} else {
+				if (_Utils_eq(intOffset, floatOffset)) {
+					return A5($elm$parser$Parser$Advanced$finalizeInt, invalid, intSettings, s.offset, intPair, s);
+				} else {
+					if (floatSettings.$ === 'Err') {
+						var x = floatSettings.a;
+						return A2(
+							$elm$parser$Parser$Advanced$Bad,
+							true,
+							A2($elm$parser$Parser$Advanced$fromState, s, invalid));
+					} else {
+						var toValue = floatSettings.a;
+						var _v1 = $elm$core$String$toFloat(
+							A3($elm$core$String$slice, s.offset, floatOffset, s.src));
+						if (_v1.$ === 'Nothing') {
+							return A2(
+								$elm$parser$Parser$Advanced$Bad,
+								true,
+								A2($elm$parser$Parser$Advanced$fromState, s, invalid));
+						} else {
+							var n = _v1.a;
+							return A3(
+								$elm$parser$Parser$Advanced$Good,
+								true,
+								toValue(n),
+								A2($elm$parser$Parser$Advanced$bumpOffset, floatOffset, s));
+						}
+					}
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$number = function (c) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			if (A3($elm$parser$Parser$Advanced$isAsciiCode, 48, s.offset, s.src)) {
+				var zeroOffset = s.offset + 1;
+				var baseOffset = zeroOffset + 1;
+				return A3($elm$parser$Parser$Advanced$isAsciiCode, 120, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.hex,
+					baseOffset,
+					A2($elm$parser$Parser$Advanced$consumeBase16, baseOffset, s.src),
+					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 111, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.octal,
+					baseOffset,
+					A3($elm$parser$Parser$Advanced$consumeBase, 8, baseOffset, s.src),
+					s) : (A3($elm$parser$Parser$Advanced$isAsciiCode, 98, zeroOffset, s.src) ? A5(
+					$elm$parser$Parser$Advanced$finalizeInt,
+					c.invalid,
+					c.binary,
+					baseOffset,
+					A3($elm$parser$Parser$Advanced$consumeBase, 2, baseOffset, s.src),
+					s) : A6(
+					$elm$parser$Parser$Advanced$finalizeFloat,
+					c.invalid,
+					c.expecting,
+					c._int,
+					c._float,
+					_Utils_Tuple2(zeroOffset, 0),
+					s)));
+			} else {
+				return A6(
+					$elm$parser$Parser$Advanced$finalizeFloat,
+					c.invalid,
+					c.expecting,
+					c._int,
+					c._float,
+					A3($elm$parser$Parser$Advanced$consumeBase, 10, s.offset, s.src),
+					s);
+			}
+		});
+};
+var $elm$parser$Parser$Advanced$int = F2(
+	function (expecting, invalid) {
+		return $elm$parser$Parser$Advanced$number(
+			{
+				binary: $elm$core$Result$Err(invalid),
+				expecting: expecting,
+				_float: $elm$core$Result$Err(invalid),
+				hex: $elm$core$Result$Err(invalid),
+				_int: $elm$core$Result$Ok($elm$core$Basics$identity),
+				invalid: invalid,
+				octal: $elm$core$Result$Err(invalid)
+			});
+	});
+var $elm$parser$Parser$int = A2($elm$parser$Parser$Advanced$int, $elm$parser$Parser$ExpectingInt, $elm$parser$Parser$ExpectingInt);
+var $elm$parser$Parser$Advanced$keeper = F2(
+	function (parseFunc, parseArg) {
+		return A3($elm$parser$Parser$Advanced$map2, $elm$core$Basics$apL, parseFunc, parseArg);
+	});
+var $elm$parser$Parser$keeper = $elm$parser$Parser$Advanced$keeper;
+var $elm$parser$Parser$Advanced$isSubChar = _Parser_isSubChar;
+var $elm$parser$Parser$Advanced$chompWhileHelp = F5(
+	function (isGood, offset, row, col, s0) {
+		chompWhileHelp:
+		while (true) {
+			var newOffset = A3($elm$parser$Parser$Advanced$isSubChar, isGood, offset, s0.src);
+			if (_Utils_eq(newOffset, -1)) {
+				return A3(
+					$elm$parser$Parser$Advanced$Good,
+					_Utils_cmp(s0.offset, offset) < 0,
+					_Utils_Tuple0,
+					{col: col, context: s0.context, indent: s0.indent, offset: offset, row: row, src: s0.src});
+			} else {
+				if (_Utils_eq(newOffset, -2)) {
+					var $temp$isGood = isGood,
+						$temp$offset = offset + 1,
+						$temp$row = row + 1,
+						$temp$col = 1,
+						$temp$s0 = s0;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					s0 = $temp$s0;
+					continue chompWhileHelp;
+				} else {
+					var $temp$isGood = isGood,
+						$temp$offset = newOffset,
+						$temp$row = row,
+						$temp$col = col + 1,
+						$temp$s0 = s0;
+					isGood = $temp$isGood;
+					offset = $temp$offset;
+					row = $temp$row;
+					col = $temp$col;
+					s0 = $temp$s0;
+					continue chompWhileHelp;
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$chompWhile = function (isGood) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A5($elm$parser$Parser$Advanced$chompWhileHelp, isGood, s.offset, s.row, s.col, s);
+		});
+};
+var $elm$parser$Parser$Advanced$spaces = $elm$parser$Parser$Advanced$chompWhile(
+	function (c) {
+		return _Utils_eq(
+			c,
+			_Utils_chr(' ')) || (_Utils_eq(
+			c,
+			_Utils_chr('\n')) || _Utils_eq(
+			c,
+			_Utils_chr('\r')));
+	});
+var $elm$parser$Parser$spaces = $elm$parser$Parser$Advanced$spaces;
+var $elm$parser$Parser$Advanced$succeed = function (a) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A3($elm$parser$Parser$Advanced$Good, false, a, s);
+		});
+};
+var $elm$parser$Parser$succeed = $elm$parser$Parser$Advanced$succeed;
+var $elm$parser$Parser$Expecting = function (a) {
+	return {$: 'Expecting', a: a};
+};
+var $elm$parser$Parser$Advanced$Token = F2(
+	function (a, b) {
+		return {$: 'Token', a: a, b: b};
+	});
+var $elm$parser$Parser$toToken = function (str) {
+	return A2(
+		$elm$parser$Parser$Advanced$Token,
+		str,
+		$elm$parser$Parser$Expecting(str));
+};
+var $elm$parser$Parser$Advanced$isSubString = _Parser_isSubString;
+var $elm$parser$Parser$Advanced$token = function (_v0) {
+	var str = _v0.a;
+	var expecting = _v0.b;
+	var progress = !$elm$core$String$isEmpty(str);
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			var _v1 = A5($elm$parser$Parser$Advanced$isSubString, str, s.offset, s.row, s.col, s.src);
+			var newOffset = _v1.a;
+			var newRow = _v1.b;
+			var newCol = _v1.c;
+			return _Utils_eq(newOffset, -1) ? A2(
+				$elm$parser$Parser$Advanced$Bad,
+				false,
+				A2($elm$parser$Parser$Advanced$fromState, s, expecting)) : A3(
+				$elm$parser$Parser$Advanced$Good,
+				progress,
+				_Utils_Tuple0,
+				{col: newCol, context: s.context, indent: s.indent, offset: newOffset, row: newRow, src: s.src});
+		});
+};
+var $elm$parser$Parser$token = function (str) {
+	return $elm$parser$Parser$Advanced$token(
+		$elm$parser$Parser$toToken(str));
 };
 var $author$project$Main$strokeRange = A2(
 	$elm$parser$Parser$keeper,
@@ -12787,6 +12452,343 @@ var $author$project$Main$strokeRange = A2(
 var $elm$core$String$foldr = _String_foldr;
 var $elm$core$String$toList = function (string) {
 	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $author$project$Main$Anim = function (a) {
+	return {$: 'Anim', a: a};
+};
+var $elm$parser$Parser$Advanced$loopHelp = F4(
+	function (p, state, callback, s0) {
+		loopHelp:
+		while (true) {
+			var _v0 = callback(state);
+			var parse = _v0.a;
+			var _v1 = parse(s0);
+			if (_v1.$ === 'Good') {
+				var p1 = _v1.a;
+				var step = _v1.b;
+				var s1 = _v1.c;
+				if (step.$ === 'Loop') {
+					var newState = step.a;
+					var $temp$p = p || p1,
+						$temp$state = newState,
+						$temp$callback = callback,
+						$temp$s0 = s1;
+					p = $temp$p;
+					state = $temp$state;
+					callback = $temp$callback;
+					s0 = $temp$s0;
+					continue loopHelp;
+				} else {
+					var result = step.a;
+					return A3($elm$parser$Parser$Advanced$Good, p || p1, result, s1);
+				}
+			} else {
+				var p1 = _v1.a;
+				var x = _v1.b;
+				return A2($elm$parser$Parser$Advanced$Bad, p || p1, x);
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$loop = F2(
+	function (state, callback) {
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s) {
+				return A4($elm$parser$Parser$Advanced$loopHelp, false, state, callback, s);
+			});
+	});
+var $elm$parser$Parser$Advanced$map = F2(
+	function (func, _v0) {
+		var parse = _v0.a;
+		return $elm$parser$Parser$Advanced$Parser(
+			function (s0) {
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Good') {
+					var p = _v1.a;
+					var a = _v1.b;
+					var s1 = _v1.c;
+					return A3(
+						$elm$parser$Parser$Advanced$Good,
+						p,
+						func(a),
+						s1);
+				} else {
+					var p = _v1.a;
+					var x = _v1.b;
+					return A2($elm$parser$Parser$Advanced$Bad, p, x);
+				}
+			});
+	});
+var $elm$parser$Parser$map = $elm$parser$Parser$Advanced$map;
+var $elm$parser$Parser$Advanced$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$parser$Parser$Advanced$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$parser$Parser$toAdvancedStep = function (step) {
+	if (step.$ === 'Loop') {
+		var s = step.a;
+		return $elm$parser$Parser$Advanced$Loop(s);
+	} else {
+		var a = step.a;
+		return $elm$parser$Parser$Advanced$Done(a);
+	}
+};
+var $elm$parser$Parser$loop = F2(
+	function (state, callback) {
+		return A2(
+			$elm$parser$Parser$Advanced$loop,
+			state,
+			function (s) {
+				return A2(
+					$elm$parser$Parser$map,
+					$elm$parser$Parser$toAdvancedStep,
+					callback(s));
+			});
+	});
+var $elm$parser$Parser$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$parser$Parser$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$parser$Parser$Advanced$Append = F2(
+	function (a, b) {
+		return {$: 'Append', a: a, b: b};
+	});
+var $elm$parser$Parser$Advanced$oneOfHelp = F3(
+	function (s0, bag, parsers) {
+		oneOfHelp:
+		while (true) {
+			if (!parsers.b) {
+				return A2($elm$parser$Parser$Advanced$Bad, false, bag);
+			} else {
+				var parse = parsers.a.a;
+				var remainingParsers = parsers.b;
+				var _v1 = parse(s0);
+				if (_v1.$ === 'Good') {
+					var step = _v1;
+					return step;
+				} else {
+					var step = _v1;
+					var p = step.a;
+					var x = step.b;
+					if (p) {
+						return step;
+					} else {
+						var $temp$s0 = s0,
+							$temp$bag = A2($elm$parser$Parser$Advanced$Append, bag, x),
+							$temp$parsers = remainingParsers;
+						s0 = $temp$s0;
+						bag = $temp$bag;
+						parsers = $temp$parsers;
+						continue oneOfHelp;
+					}
+				}
+			}
+		}
+	});
+var $elm$parser$Parser$Advanced$oneOf = function (parsers) {
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s) {
+			return A3($elm$parser$Parser$Advanced$oneOfHelp, s, $elm$parser$Parser$Advanced$Empty, parsers);
+		});
+};
+var $elm$parser$Parser$oneOf = $elm$parser$Parser$Advanced$oneOf;
+var $author$project$Main$manyHelp = F2(
+	function (p, vs) {
+		return $elm$parser$Parser$oneOf(
+			_List_fromArray(
+				[
+					A2(
+					$elm$parser$Parser$keeper,
+					$elm$parser$Parser$succeed(
+						function (v) {
+							return $elm$parser$Parser$Loop(
+								A2($elm$core$List$cons, v, vs));
+						}),
+					p),
+					A2(
+					$elm$parser$Parser$map,
+					function (_v0) {
+						return $elm$parser$Parser$Done(
+							$elm$core$List$reverse(vs));
+					},
+					$elm$parser$Parser$succeed(_Utils_Tuple0))
+				]));
+	});
+var $author$project$Main$many = function (p) {
+	return A2(
+		$elm$parser$Parser$loop,
+		_List_Nil,
+		$author$project$Main$manyHelp(p));
+};
+var $elm$parser$Parser$ExpectingFloat = {$: 'ExpectingFloat'};
+var $elm$parser$Parser$Advanced$float = F2(
+	function (expecting, invalid) {
+		return $elm$parser$Parser$Advanced$number(
+			{
+				binary: $elm$core$Result$Err(invalid),
+				expecting: expecting,
+				_float: $elm$core$Result$Ok($elm$core$Basics$identity),
+				hex: $elm$core$Result$Err(invalid),
+				_int: $elm$core$Result$Ok($elm$core$Basics$toFloat),
+				invalid: invalid,
+				octal: $elm$core$Result$Err(invalid)
+			});
+	});
+var $elm$parser$Parser$float = A2($elm$parser$Parser$Advanced$float, $elm$parser$Parser$ExpectingFloat, $elm$parser$Parser$ExpectingFloat);
+var $author$project$Main$anim = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$succeed($author$project$Main$Anim),
+		$elm$parser$Parser$token('--d:')),
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$float,
+		$elm$parser$Parser$token('s;')));
+var $elm$parser$Parser$Advanced$backtrackable = function (_v0) {
+	var parse = _v0.a;
+	return $elm$parser$Parser$Advanced$Parser(
+		function (s0) {
+			var _v1 = parse(s0);
+			if (_v1.$ === 'Bad') {
+				var x = _v1.b;
+				return A2($elm$parser$Parser$Advanced$Bad, false, x);
+			} else {
+				var a = _v1.b;
+				var s1 = _v1.c;
+				return A3($elm$parser$Parser$Advanced$Good, false, a, s1);
+			}
+		});
+};
+var $elm$parser$Parser$backtrackable = $elm$parser$Parser$Advanced$backtrackable;
+var $author$project$Main$Stroke = F3(
+	function (a, b, c) {
+		return {$: 'Stroke', a: a, b: b, c: c};
+	});
+var $author$project$Main$stroke = A2(
+	$elm$parser$Parser$keeper,
+	A2(
+		$elm$parser$Parser$keeper,
+		A2(
+			$elm$parser$Parser$keeper,
+			A2(
+				$elm$parser$Parser$ignorer,
+				A2(
+					$elm$parser$Parser$ignorer,
+					$elm$parser$Parser$succeed($author$project$Main$Stroke),
+					$elm$parser$Parser$spaces),
+				$elm$parser$Parser$token('stroke: rgb(')),
+			A2(
+				$elm$parser$Parser$ignorer,
+				$elm$parser$Parser$int,
+				$elm$parser$Parser$token(', '))),
+		A2(
+			$elm$parser$Parser$ignorer,
+			$elm$parser$Parser$int,
+			$elm$parser$Parser$token(', '))),
+	A2(
+		$elm$parser$Parser$ignorer,
+		$elm$parser$Parser$int,
+		$elm$parser$Parser$token(');')));
+var $author$project$Main$style = $elm$parser$Parser$oneOf(
+	_List_fromArray(
+		[
+			$elm$parser$Parser$backtrackable($author$project$Main$anim),
+			$author$project$Main$stroke
+		]));
+var $author$project$Main$styles = $author$project$Main$many($author$project$Main$style);
+var $author$project$Main$styleToStr = function (s) {
+	if (s.$ === 'Anim') {
+		var f = s.a;
+		return '--d:' + ($elm$core$String$fromFloat(f) + 's;');
+	} else {
+		var r = s.a;
+		var g = s.b;
+		var b = s.c;
+		return 'stroke: rgb(' + ($elm$core$String$fromInt(r) + (', ' + ($elm$core$String$fromInt(g) + (', ' + ($elm$core$String$fromInt(g) + ');')))));
+	}
+};
+var $author$project$Main$stylesToStr = function (ss) {
+	return A2(
+		$elm$core$String$join,
+		' ',
+		A2($elm$core$List$map, $author$project$Main$styleToStr, ss));
+};
+var $elm$core$Result$withDefault = F2(
+	function (def, result) {
+		if (result.$ === 'Ok') {
+			var a = result.a;
+			return a;
+		} else {
+			return def;
+		}
+	});
+var $author$project$Main$toggleAnimation = function (model) {
+	var newStyleBlock = A2($elm$core$String$contains, '--t:0.8s;', model.parsedSvg.styleBlock) ? A3($elm$core$String$replace, '--t:0.8s;', '--t:0s;', model.parsedSvg.styleBlock) : A3($elm$core$String$replace, '--t:0s;', '--t:0.8s;', model.parsedSvg.styleBlock);
+	var newNodeStyle = function (attr) {
+		if (attr.a === 'style') {
+			var v = attr.b;
+			return _Utils_Tuple2(
+				'style',
+				$author$project$Main$stylesToStr(
+					A2(
+						$elm$core$List$map,
+						function (s) {
+							if (s.$ === 'Anim') {
+								var d = s.a;
+								return $author$project$Main$Anim(0);
+							} else {
+								return s;
+							}
+						},
+						A2(
+							$elm$core$Result$withDefault,
+							_List_Nil,
+							A2($elm$parser$Parser$run, $author$project$Main$styles, v)))));
+		} else {
+			return attr;
+		}
+	};
+	var newSvg = A2(
+		$elm$core$List$map,
+		function (node) {
+			if (node.$ === 'SvgElement') {
+				var el = node.a;
+				return $author$project$SvgParserVendored$SvgElement(
+					_Utils_update(
+						el,
+						{
+							children: A2(
+								$elm$core$List$map,
+								function (c) {
+									if (c.$ === 'SvgElement') {
+										var el_ = c.a;
+										return $author$project$SvgParserVendored$SvgElement(
+											_Utils_update(
+												el_,
+												{
+													attributes: A2($elm$core$List$map, newNodeStyle, el_.attributes)
+												}));
+									} else {
+										return c;
+									}
+								},
+								el.children)
+						}));
+			} else {
+				var other = node;
+				return other;
+			}
+		},
+		model.parsedSvg.svg);
+	return _Utils_update(
+		model,
+		{
+			parsedSvg: {styleBlock: newStyleBlock, svg: newSvg}
+		});
 };
 var $author$project$Main$update = F2(
 	function (msg, model) {
@@ -12852,7 +12854,7 @@ var $author$project$Main$update = F2(
 											svg: A2(
 												$elm$core$Result$withDefault,
 												_List_Nil,
-												$Garados007$elm_svg_parser$SvgParser$parseToNodes(svg_))
+												$author$project$SvgParserVendored$parseToNodes(svg_))
 										};
 									}(
 										$author$project$Main$extractStyleBlock(svg))
@@ -13124,7 +13126,7 @@ var $author$project$Main$colorize = function (model) {
 				function (index, node) {
 					if (node.$ === 'SvgElement') {
 						var el_ = node.a;
-						return $Garados007$elm_svg_parser$SvgParser$SvgElement(
+						return $author$project$SvgParserVendored$SvgElement(
 							_Utils_update(
 								el_,
 								{
@@ -13147,10 +13149,10 @@ var $author$project$Main$colorize = function (model) {
 					styleBlock: model.parsedSvg.styleBlock,
 					svg: A2(
 						$elm$core$List$cons,
-						$Garados007$elm_svg_parser$SvgParser$SvgComment(comment),
+						$author$project$SvgParserVendored$SvgComment(comment),
 						_List_fromArray(
 							[
-								$Garados007$elm_svg_parser$SvgParser$SvgElement(
+								$author$project$SvgParserVendored$SvgElement(
 								_Utils_update(
 									el,
 									{
@@ -18829,6 +18831,30 @@ var $mdgriffith$elm_ui$Element$padding = function (x) {
 			f,
 			f));
 };
+var $Garados007$elm_svg_parser$SvgParser$SvgElement = function (a) {
+	return {$: 'SvgElement', a: a};
+};
+var $Garados007$elm_svg_parser$SvgParser$SvgText = function (a) {
+	return {$: 'SvgText', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
+	return {$: 'AlignX', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$Right = {$: 'Right'};
+var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Right);
+var $mdgriffith$elm_ui$Element$Font$color = function (fontColor) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$fontColor,
+		A3(
+			$mdgriffith$elm_ui$Internal$Model$Colored,
+			'fc-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(fontColor),
+			'color',
+			fontColor));
+};
+var $elm$html$Html$Attributes$download = function (fileName) {
+	return A2($elm$html$Html$Attributes$stringProperty, 'download', fileName);
+};
 var $mdgriffith$elm_ui$Element$el = F2(
 	function (attrs, child) {
 		return A4(
@@ -18846,8 +18872,214 @@ var $mdgriffith$elm_ui$Element$el = F2(
 				_List_fromArray(
 					[child])));
 	});
+var $truqu$elm_base64$Base64$Encode$intToBase64 = function (i) {
+	switch (i) {
+		case 0:
+			return 'A';
+		case 1:
+			return 'B';
+		case 2:
+			return 'C';
+		case 3:
+			return 'D';
+		case 4:
+			return 'E';
+		case 5:
+			return 'F';
+		case 6:
+			return 'G';
+		case 7:
+			return 'H';
+		case 8:
+			return 'I';
+		case 9:
+			return 'J';
+		case 10:
+			return 'K';
+		case 11:
+			return 'L';
+		case 12:
+			return 'M';
+		case 13:
+			return 'N';
+		case 14:
+			return 'O';
+		case 15:
+			return 'P';
+		case 16:
+			return 'Q';
+		case 17:
+			return 'R';
+		case 18:
+			return 'S';
+		case 19:
+			return 'T';
+		case 20:
+			return 'U';
+		case 21:
+			return 'V';
+		case 22:
+			return 'W';
+		case 23:
+			return 'X';
+		case 24:
+			return 'Y';
+		case 25:
+			return 'Z';
+		case 26:
+			return 'a';
+		case 27:
+			return 'b';
+		case 28:
+			return 'c';
+		case 29:
+			return 'd';
+		case 30:
+			return 'e';
+		case 31:
+			return 'f';
+		case 32:
+			return 'g';
+		case 33:
+			return 'h';
+		case 34:
+			return 'i';
+		case 35:
+			return 'j';
+		case 36:
+			return 'k';
+		case 37:
+			return 'l';
+		case 38:
+			return 'm';
+		case 39:
+			return 'n';
+		case 40:
+			return 'o';
+		case 41:
+			return 'p';
+		case 42:
+			return 'q';
+		case 43:
+			return 'r';
+		case 44:
+			return 's';
+		case 45:
+			return 't';
+		case 46:
+			return 'u';
+		case 47:
+			return 'v';
+		case 48:
+			return 'w';
+		case 49:
+			return 'x';
+		case 50:
+			return 'y';
+		case 51:
+			return 'z';
+		case 52:
+			return '0';
+		case 53:
+			return '1';
+		case 54:
+			return '2';
+		case 55:
+			return '3';
+		case 56:
+			return '4';
+		case 57:
+			return '5';
+		case 58:
+			return '6';
+		case 59:
+			return '7';
+		case 60:
+			return '8';
+		case 61:
+			return '9';
+		case 62:
+			return '+';
+		default:
+			return '/';
+	}
+};
+var $truqu$elm_base64$Base64$Encode$toBase64 = function (_int) {
+	return _Utils_ap(
+		$truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 18)),
+		_Utils_ap(
+			$truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 12)),
+			_Utils_ap(
+				$truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 6)),
+				$truqu$elm_base64$Base64$Encode$intToBase64(63 & (_int >>> 0)))));
+};
+var $truqu$elm_base64$Base64$Encode$add = F2(
+	function (_char, _v0) {
+		var res = _v0.a;
+		var count = _v0.b;
+		var acc = _v0.c;
+		var current = (acc << 8) | _char;
+		if (count === 2) {
+			return _Utils_Tuple3(
+				_Utils_ap(
+					res,
+					$truqu$elm_base64$Base64$Encode$toBase64(current)),
+				0,
+				0);
+		} else {
+			return _Utils_Tuple3(res, count + 1, current);
+		}
+	});
+var $truqu$elm_base64$Base64$Encode$chomp = F2(
+	function (char_, acc) {
+		var _char = $elm$core$Char$toCode(char_);
+		return (_char < 128) ? A2($truqu$elm_base64$Base64$Encode$add, _char, acc) : ((_char < 2048) ? A2(
+			$truqu$elm_base64$Base64$Encode$add,
+			128 | (63 & _char),
+			A2($truqu$elm_base64$Base64$Encode$add, 192 | (_char >>> 6), acc)) : (((_char < 55296) || ((_char >= 57344) && (_char <= 65535))) ? A2(
+			$truqu$elm_base64$Base64$Encode$add,
+			128 | (63 & _char),
+			A2(
+				$truqu$elm_base64$Base64$Encode$add,
+				128 | (63 & (_char >>> 6)),
+				A2($truqu$elm_base64$Base64$Encode$add, 224 | (_char >>> 12), acc))) : A2(
+			$truqu$elm_base64$Base64$Encode$add,
+			128 | (63 & _char),
+			A2(
+				$truqu$elm_base64$Base64$Encode$add,
+				128 | (63 & (_char >>> 6)),
+				A2(
+					$truqu$elm_base64$Base64$Encode$add,
+					128 | (63 & (_char >>> 12)),
+					A2($truqu$elm_base64$Base64$Encode$add, 240 | (_char >>> 18), acc))))));
+	});
+var $elm$core$String$foldl = _String_foldl;
+var $truqu$elm_base64$Base64$Encode$initial = _Utils_Tuple3('', 0, 0);
+var $truqu$elm_base64$Base64$Encode$wrapUp = function (_v0) {
+	var res = _v0.a;
+	var cnt = _v0.b;
+	var acc = _v0.c;
+	switch (cnt) {
+		case 1:
+			return res + ($truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc >>> 2)) + ($truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc << 4)) + '=='));
+		case 2:
+			return res + ($truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc >>> 10)) + ($truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc >>> 4)) + ($truqu$elm_base64$Base64$Encode$intToBase64(63 & (acc << 2)) + '=')));
+		default:
+			return res;
+	}
+};
+var $truqu$elm_base64$Base64$Encode$encode = function (input) {
+	return $truqu$elm_base64$Base64$Encode$wrapUp(
+		A3($elm$core$String$foldl, $truqu$elm_base64$Base64$Encode$chomp, $truqu$elm_base64$Base64$Encode$initial, input));
+};
+var $truqu$elm_base64$Base64$encode = $truqu$elm_base64$Base64$Encode$encode;
+var $elm$core$String$cons = _String_cons;
+var $elm$core$String$fromChar = function (_char) {
+	return A2($elm$core$String$cons, _char, '');
+};
 var $mdgriffith$elm_ui$Internal$Model$unstyled = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Unstyled, $elm$core$Basics$always);
 var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
+var $elm$core$Debug$log = _Debug_log;
 var $elm$svg$Svg$node = $elm$virtual_dom$VirtualDom$nodeNS('http://www.w3.org/2000/svg');
 var $elm$svg$Svg$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$virtual_dom$VirtualDom$attributeNS = F3(
@@ -18883,38 +19115,633 @@ var $Garados007$elm_svg_parser$SvgParser$nodeToSvg = function (svgNode) {
 			return $elm$svg$Svg$text('');
 	}
 };
+var $PaackEng$elm_svg_string$Svg$Types$Node = F3(
+	function (a, b, c) {
+		return {$: 'Node', a: a, b: b, c: c};
+	});
+var $PaackEng$elm_svg_string$Svg$Types$Regular = function (a) {
+	return {$: 'Regular', a: a};
+};
+var $PaackEng$elm_svg_string$Svg$String$node = F3(
+	function (tag, attributes, children) {
+		return A3(
+			$PaackEng$elm_svg_string$Svg$Types$Node,
+			tag,
+			attributes,
+			$PaackEng$elm_svg_string$Svg$Types$Regular(children));
+	});
+var $PaackEng$elm_svg_string$Svg$Types$TextNode = function (a) {
+	return {$: 'TextNode', a: a};
+};
+var $PaackEng$elm_svg_string$Svg$String$text = $PaackEng$elm_svg_string$Svg$Types$TextNode;
+var $PaackEng$elm_svg_string$Svg$Types$Attribute = F2(
+	function (a, b) {
+		return {$: 'Attribute', a: a, b: b};
+	});
+var $PaackEng$elm_svg_string$Svg$String$Attributes$attribute = $PaackEng$elm_svg_string$Svg$Types$Attribute;
+var $author$project$SvgParserVendored$toAttribute = function (_v0) {
+	var name = _v0.a;
+	var value = _v0.b;
+	return A2($PaackEng$elm_svg_string$Svg$String$Attributes$attribute, name, value);
+};
+var $author$project$SvgParserVendored$elementToSvg = function (element) {
+	return A3(
+		$PaackEng$elm_svg_string$Svg$String$node,
+		element.name,
+		A2($elm$core$List$map, $author$project$SvgParserVendored$toAttribute, element.attributes),
+		A2($elm$core$List$map, $author$project$SvgParserVendored$nodeToSvg, element.children));
+};
+var $author$project$SvgParserVendored$nodeToSvg = function (svgNode) {
+	switch (svgNode.$) {
+		case 'SvgElement':
+			var element = svgNode.a;
+			return $author$project$SvgParserVendored$elementToSvg(element);
+		case 'SvgText':
+			var content = svgNode.a;
+			return $PaackEng$elm_svg_string$Svg$String$text(content);
+		default:
+			var content = svgNode.a;
+			return $PaackEng$elm_svg_string$Svg$String$text('');
+	}
+};
 var $mdgriffith$elm_ui$Internal$Model$Empty = {$: 'Empty'};
 var $mdgriffith$elm_ui$Element$none = $mdgriffith$elm_ui$Internal$Model$Empty;
-var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
-var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
+var $Garados007$elm_svg_parser$SvgParser$flip = F3(
+	function (func, b, a) {
+		return A2(func, a, b);
+	});
+var $Garados007$elm_svg_parser$SvgParser$andMapRight = F2(
+	function (lp, rp) {
+		return A2(
+			$andre_dietrich$parser_combinators$Combine$andMap,
+			rp,
+			A2(
+				$andre_dietrich$parser_combinators$Combine$map,
+				$Garados007$elm_svg_parser$SvgParser$flip($elm$core$Basics$always),
+				lp));
+	});
+var $Garados007$elm_svg_parser$SvgParser$doctypeDeclarationParser = A2(
+	$Garados007$elm_svg_parser$SvgParser$andMapRight,
+	$andre_dietrich$parser_combinators$Combine$whitespace,
+	$andre_dietrich$parser_combinators$Combine$regex('<!DOCTYPE(?:\"(?:\\\\.|[^\"])*\"|\'(?:\\\\.|[^\'])*\'|[^>])*>'));
+var $Garados007$elm_svg_parser$SvgParser$andMapLeft = F2(
+	function (lp, rp) {
+		return A2(
+			$andre_dietrich$parser_combinators$Combine$andMap,
+			rp,
+			A2($andre_dietrich$parser_combinators$Combine$map, $elm$core$Basics$always, lp));
+	});
+var $Garados007$elm_svg_parser$SvgParser$SvgComment = function (a) {
+	return {$: 'SvgComment', a: a};
+};
+var $Garados007$elm_svg_parser$SvgParser$commentParser = $andre_dietrich$parser_combinators$Combine$lazy(
+	function (_v0) {
+		return A2(
+			$andre_dietrich$parser_combinators$Combine$map,
+			A2($elm$core$Basics$composeL, $Garados007$elm_svg_parser$SvgParser$SvgComment, $elm$core$String$fromList),
+			A2(
+				$Garados007$elm_svg_parser$SvgParser$andMapRight,
+				A2(
+					$Garados007$elm_svg_parser$SvgParser$andMapRight,
+					$andre_dietrich$parser_combinators$Combine$whitespace,
+					$andre_dietrich$parser_combinators$Combine$string('<!--')),
+				A2(
+					$andre_dietrich$parser_combinators$Combine$manyTill,
+					$andre_dietrich$parser_combinators$Combine$Char$anyChar,
+					$andre_dietrich$parser_combinators$Combine$string('-->'))));
+	});
+var $Garados007$elm_svg_parser$SvgParser$Element = F3(
+	function (name, attributes, children) {
+		return {attributes: attributes, children: children, name: name};
+	});
+var $Garados007$elm_svg_parser$SvgParser$attributeParser = A2(
+	$andre_dietrich$parser_combinators$Combine$andMap,
+	A2(
+		$andre_dietrich$parser_combinators$Combine$optional,
+		'',
+		A2(
+			$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+			A2(
+				$Garados007$elm_svg_parser$SvgParser$andMapRight,
+				$andre_dietrich$parser_combinators$Combine$string('=\"'),
+				$andre_dietrich$parser_combinators$Combine$regex('[^\"]*')),
+			$andre_dietrich$parser_combinators$Combine$string('\"'))),
+	A2(
+		$andre_dietrich$parser_combinators$Combine$map,
+		$elm$core$Tuple$pair,
+		$andre_dietrich$parser_combinators$Combine$regex('[^=>/]+')));
+var $Garados007$elm_svg_parser$SvgParser$openingParser = A3(
+	$Garados007$elm_svg_parser$SvgParser$flip,
+	$andre_dietrich$parser_combinators$Combine$andMap,
+	A2(
+		$andre_dietrich$parser_combinators$Combine$andMap,
+		$andre_dietrich$parser_combinators$Combine$regex('[^/>\\s]+'),
+		A2(
+			$andre_dietrich$parser_combinators$Combine$map,
+			F3(
+				function (_v0, tagName, attributes) {
+					return A3($Garados007$elm_svg_parser$SvgParser$Element, tagName, attributes, _List_Nil);
+				}),
+			$andre_dietrich$parser_combinators$Combine$string('<'))),
+	A2(
+		$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+		A2(
+			$Garados007$elm_svg_parser$SvgParser$andMapRight,
+			$andre_dietrich$parser_combinators$Combine$whitespace,
+			A2($andre_dietrich$parser_combinators$Combine$sepBy, $andre_dietrich$parser_combinators$Combine$whitespace, $Garados007$elm_svg_parser$SvgParser$attributeParser)),
+		$andre_dietrich$parser_combinators$Combine$whitespace));
+var $Garados007$elm_svg_parser$SvgParser$textParser = $andre_dietrich$parser_combinators$Combine$lazy(
+	function (_v0) {
+		return A2(
+			$andre_dietrich$parser_combinators$Combine$map,
+			$Garados007$elm_svg_parser$SvgParser$SvgText,
+			A2(
+				$Garados007$elm_svg_parser$SvgParser$andMapRight,
+				$andre_dietrich$parser_combinators$Combine$whitespace,
+				$andre_dietrich$parser_combinators$Combine$regex('[^<]+')));
+	});
+var $Garados007$elm_svg_parser$SvgParser$closingOrChildrenParser = function (element) {
+	var childrenParser = A2(
+		$andre_dietrich$parser_combinators$Combine$map,
+		function (children) {
+			return _Utils_update(
+				element,
+				{children: children});
+		},
+		A2(
+			$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+			A2(
+				$Garados007$elm_svg_parser$SvgParser$andMapLeft,
+				A2(
+					$Garados007$elm_svg_parser$SvgParser$andMapRight,
+					A2(
+						$Garados007$elm_svg_parser$SvgParser$andMapRight,
+						$andre_dietrich$parser_combinators$Combine$whitespace,
+						$andre_dietrich$parser_combinators$Combine$string('>')),
+					$andre_dietrich$parser_combinators$Combine$many(
+						$Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser())),
+				$andre_dietrich$parser_combinators$Combine$whitespace),
+			$andre_dietrich$parser_combinators$Combine$string('</' + (element.name + '>'))));
+	return $andre_dietrich$parser_combinators$Combine$lazy(
+		function (_v2) {
+			return $andre_dietrich$parser_combinators$Combine$choice(
+				_List_fromArray(
+					[
+						A2(
+						$Garados007$elm_svg_parser$SvgParser$andMapRight,
+						A2(
+							$Garados007$elm_svg_parser$SvgParser$andMapRight,
+							$andre_dietrich$parser_combinators$Combine$whitespace,
+							$andre_dietrich$parser_combinators$Combine$string('/>')),
+						$andre_dietrich$parser_combinators$Combine$succeed(element)),
+						childrenParser
+					]));
+		});
+};
+function $Garados007$elm_svg_parser$SvgParser$cyclic$elementParser() {
+	return $andre_dietrich$parser_combinators$Combine$lazy(
+		function (_v1) {
+			return A2(
+				$andre_dietrich$parser_combinators$Combine$map,
+				$Garados007$elm_svg_parser$SvgParser$SvgElement,
+				A2(
+					$andre_dietrich$parser_combinators$Combine$andThen,
+					$Garados007$elm_svg_parser$SvgParser$closingOrChildrenParser,
+					A2(
+						$andre_dietrich$parser_combinators$Combine$andMap,
+						$Garados007$elm_svg_parser$SvgParser$openingParser,
+						A2(
+							$andre_dietrich$parser_combinators$Combine$map,
+							$Garados007$elm_svg_parser$SvgParser$flip($elm$core$Basics$always),
+							$andre_dietrich$parser_combinators$Combine$whitespace))));
+		});
+}
+function $Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser() {
+	return $andre_dietrich$parser_combinators$Combine$lazy(
+		function (_v0) {
+			return $andre_dietrich$parser_combinators$Combine$choice(
+				_List_fromArray(
+					[
+						$Garados007$elm_svg_parser$SvgParser$textParser,
+						$Garados007$elm_svg_parser$SvgParser$commentParser,
+						$Garados007$elm_svg_parser$SvgParser$cyclic$elementParser()
+					]));
+		});
+}
+try {
+	var $Garados007$elm_svg_parser$SvgParser$elementParser = $Garados007$elm_svg_parser$SvgParser$cyclic$elementParser();
+	$Garados007$elm_svg_parser$SvgParser$cyclic$elementParser = function () {
+		return $Garados007$elm_svg_parser$SvgParser$elementParser;
+	};
+	var $Garados007$elm_svg_parser$SvgParser$nodeParser = $Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser();
+	$Garados007$elm_svg_parser$SvgParser$cyclic$nodeParser = function () {
+		return $Garados007$elm_svg_parser$SvgParser$nodeParser;
+	};
+} catch ($) {
+	throw 'Some top-level definitions from `SvgParser` are causing infinite recursion:\n\n  ┌─────┐\n  │    closingOrChildrenParser\n  │     ↓\n  │    elementParser\n  │     ↓\n  │    nodeParser\n  └─────┘\n\nThese errors are very tricky, so read https://elm-lang.org/0.19.1/bad-recursion to learn how to fix it!';}
+var $Garados007$elm_svg_parser$SvgParser$xmlDeclarationParser = A2(
+	$andre_dietrich$parser_combinators$Combine$map,
+	$elm$core$String$fromList,
+	A2(
+		$Garados007$elm_svg_parser$SvgParser$andMapRight,
+		A2(
+			$Garados007$elm_svg_parser$SvgParser$andMapRight,
+			$andre_dietrich$parser_combinators$Combine$whitespace,
+			$andre_dietrich$parser_combinators$Combine$string('<?xml')),
+		A2(
+			$andre_dietrich$parser_combinators$Combine$manyTill,
+			$andre_dietrich$parser_combinators$Combine$Char$anyChar,
+			$andre_dietrich$parser_combinators$Combine$string('?>'))));
+var $Garados007$elm_svg_parser$SvgParser$parseToNodes = function (input) {
+	var _v0 = A3(
+		$andre_dietrich$parser_combinators$Combine$runParser,
+		A2(
+			$Garados007$elm_svg_parser$SvgParser$andMapRight,
+			A2($andre_dietrich$parser_combinators$Combine$optional, '', $Garados007$elm_svg_parser$SvgParser$xmlDeclarationParser),
+			A2(
+				$Garados007$elm_svg_parser$SvgParser$andMapRight,
+				A2($andre_dietrich$parser_combinators$Combine$optional, '', $Garados007$elm_svg_parser$SvgParser$doctypeDeclarationParser),
+				$andre_dietrich$parser_combinators$Combine$many($Garados007$elm_svg_parser$SvgParser$nodeParser))),
+		_List_Nil,
+		input);
+	if (_v0.$ === 'Ok') {
+		var _v1 = _v0.a;
+		var svgNodes = _v1.c;
+		return $elm$core$Result$Ok(svgNodes);
+	} else {
+		var _v2 = _v0.a;
+		var errors = _v2.c;
+		return $elm$core$Result$Err(
+			A2($elm$core$String$join, ' or ', errors));
+	}
+};
+var $mdgriffith$elm_ui$Internal$Model$Px = function (a) {
+	return {$: 'Px', a: a};
+};
+var $mdgriffith$elm_ui$Element$px = $mdgriffith$elm_ui$Internal$Model$Px;
+var $mdgriffith$elm_ui$Element$rgb255 = F3(
+	function (red, green, blue) {
+		return A4($mdgriffith$elm_ui$Internal$Model$Rgba, red / 255, green / 255, blue / 255, 1);
+	});
+var $PaackEng$elm_svg_string$Svg$Types$HtmlNode = F3(
+	function (a, b, c) {
+		return {$: 'HtmlNode', a: a, b: b, c: c};
+	});
+var $PaackEng$elm_svg_string$Svg$String$htmlNode = F3(
+	function (tag, attributes, children) {
+		return A3($PaackEng$elm_svg_string$Svg$Types$HtmlNode, tag, attributes, children);
+	});
+var $PaackEng$elm_svg_string$Svg$String$svg = $PaackEng$elm_svg_string$Svg$String$htmlNode('svg');
+var $PaackEng$elm_svg_string$Svg$Types$closingTag = function (tagName) {
+	return '</' + (tagName + '>');
+};
+var $PaackEng$elm_svg_string$Svg$Types$escape = A2(
+	$elm$core$String$foldl,
+	F2(
+		function (_char, acc) {
+			return _Utils_eq(
+				_char,
+				_Utils_chr('\'')) ? (acc + '&apos;') : _Utils_ap(
+				acc,
+				$elm$core$String$fromChar(_char));
+		}),
+	'');
+var $elm$core$Char$toLower = _Char_toLower;
+var $PaackEng$elm_svg_string$Svg$Types$hyphenate = A2(
+	$elm$core$String$foldl,
+	F2(
+		function (_char, acc) {
+			return $elm$core$Char$isUpper(_char) ? (acc + ('-' + $elm$core$String$fromChar(
+				$elm$core$Char$toLower(_char)))) : _Utils_ap(
+				acc,
+				$elm$core$String$fromChar(_char));
+		}),
+	'');
+var $PaackEng$elm_svg_string$Svg$Types$buildProp = F2(
+	function (key, value) {
+		return $PaackEng$elm_svg_string$Svg$Types$hyphenate(key) + ('=\'' + ($PaackEng$elm_svg_string$Svg$Types$escape(value) + '\''));
+	});
+var $PaackEng$elm_svg_string$Svg$Types$attributeToString = function (attribute) {
+	switch (attribute.$) {
+		case 'Attribute':
+			var key = attribute.a;
+			var value = attribute.b;
+			return $elm$core$Maybe$Just(
+				A2($PaackEng$elm_svg_string$Svg$Types$buildProp, key, value));
+		case 'Style':
+			var style = attribute.a;
+			return $elm$core$Maybe$Just('style=\'' + (style + '\''));
+		default:
+			var string = attribute.a;
+			var msgDecoder = attribute.b;
+			return $elm$core$Maybe$Nothing;
+	}
+};
+var $PaackEng$elm_svg_string$Svg$Types$tag = F2(
+	function (tagName, attributes) {
+		return '<' + (A2(
+			$elm$core$String$join,
+			' ',
+			A2(
+				$elm$core$List$cons,
+				tagName,
+				A2($elm$core$List$filterMap, $PaackEng$elm_svg_string$Svg$Types$attributeToString, attributes))) + '>');
+	});
+var $PaackEng$elm_svg_string$Svg$Types$svgToStringHelper = F3(
+	function (indenter, tags, acc) {
+		if (!tags.b) {
+			var _v1 = acc.stack;
+			if (!_v1.b) {
+				return acc;
+			} else {
+				var _v2 = _v1.a;
+				var tagName = _v2.a;
+				var cont = _v2.b;
+				var rest = _v1.b;
+				return A3(
+					$PaackEng$elm_svg_string$Svg$Types$svgToStringHelper,
+					indenter,
+					cont,
+					_Utils_update(
+						acc,
+						{
+							depth: acc.depth - 1,
+							result: A2(
+								$elm$core$List$cons,
+								A2(
+									indenter,
+									acc.depth - 1,
+									$PaackEng$elm_svg_string$Svg$Types$closingTag(tagName)),
+								acc.result),
+							stack: rest
+						}));
+			}
+		} else {
+			if (tags.a.$ === 'Node') {
+				var _v3 = tags.a;
+				var tagName = _v3.a;
+				var attributes = _v3.b;
+				var children = _v3.c;
+				var rest = tags.b;
+				switch (children.$) {
+					case 'NoChildren':
+						return A3(
+							$PaackEng$elm_svg_string$Svg$Types$svgToStringHelper,
+							indenter,
+							rest,
+							_Utils_update(
+								acc,
+								{
+									result: A2(
+										$elm$core$List$cons,
+										A2(
+											indenter,
+											acc.depth,
+											A2($PaackEng$elm_svg_string$Svg$Types$tag, tagName, attributes)),
+										acc.result)
+								}));
+					case 'Regular':
+						var childNodes = children.a;
+						return A3(
+							$PaackEng$elm_svg_string$Svg$Types$svgToStringHelper,
+							indenter,
+							childNodes,
+							_Utils_update(
+								acc,
+								{
+									depth: acc.depth + 1,
+									result: A2(
+										$elm$core$List$cons,
+										A2(
+											indenter,
+											acc.depth,
+											A2($PaackEng$elm_svg_string$Svg$Types$tag, tagName, attributes)),
+										acc.result),
+									stack: A2(
+										$elm$core$List$cons,
+										_Utils_Tuple2(tagName, rest),
+										acc.stack)
+								}));
+					default:
+						var childNodes = children.a;
+						return A3(
+							$PaackEng$elm_svg_string$Svg$Types$svgToStringHelper,
+							indenter,
+							A2($elm$core$List$map, $elm$core$Tuple$second, childNodes),
+							_Utils_update(
+								acc,
+								{
+									depth: acc.depth + 1,
+									result: A2(
+										$elm$core$List$cons,
+										A2(
+											indenter,
+											acc.depth,
+											A2($PaackEng$elm_svg_string$Svg$Types$tag, tagName, attributes)),
+										acc.result),
+									stack: A2(
+										$elm$core$List$cons,
+										_Utils_Tuple2(tagName, rest),
+										acc.stack)
+								}));
+				}
+			} else {
+				var string = tags.a.a;
+				var rest = tags.b;
+				return A3(
+					$PaackEng$elm_svg_string$Svg$Types$svgToStringHelper,
+					indenter,
+					rest,
+					_Utils_update(
+						acc,
+						{
+							result: A2(
+								$elm$core$List$cons,
+								A2(indenter, acc.depth, string),
+								acc.result)
+						}));
+			}
+		}
+	});
+var $PaackEng$elm_svg_string$Svg$Types$htmlToStringHelper = F3(
+	function (indenter, _v0, acc) {
+		var tagName = _v0.a;
+		var attributes = _v0.b;
+		var children = _v0.c;
+		return A3(
+			$PaackEng$elm_svg_string$Svg$Types$svgToStringHelper,
+			indenter,
+			children,
+			_Utils_update(
+				acc,
+				{
+					depth: acc.depth + 1,
+					result: A2(
+						$elm$core$List$cons,
+						A2(
+							indenter,
+							acc.depth,
+							A2($PaackEng$elm_svg_string$Svg$Types$tag, tagName, attributes)),
+						acc.result),
+					stack: A2(
+						$elm$core$List$cons,
+						_Utils_Tuple2(tagName, _List_Nil),
+						acc.stack)
+				}));
+	});
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $elm$core$String$repeatHelp = F3(
+	function (n, chunk, result) {
+		return (n <= 0) ? result : A3(
+			$elm$core$String$repeatHelp,
+			n >> 1,
+			_Utils_ap(chunk, chunk),
+			(!(n & 1)) ? result : _Utils_ap(result, chunk));
+	});
+var $elm$core$String$repeat = F2(
+	function (n, chunk) {
+		return A3($elm$core$String$repeatHelp, n, chunk, '');
+	});
+var $PaackEng$elm_svg_string$Svg$Types$indent = F3(
+	function (perLevel, level, x) {
+		return _Utils_ap(
+			A2($elm$core$String$repeat, perLevel * level, ' '),
+			x);
+	});
+var $PaackEng$elm_svg_string$Svg$Types$join = F2(
+	function (between, list) {
+		if (!list.b) {
+			return '';
+		} else {
+			if (!list.b.b) {
+				var x = list.a;
+				return x;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				return A3(
+					$elm$core$List$foldl,
+					F2(
+						function (y, acc) {
+							return _Utils_ap(
+								y,
+								_Utils_ap(between, acc));
+						}),
+					x,
+					xs);
+			}
+		}
+	});
+var $PaackEng$elm_svg_string$Svg$Types$toString = F2(
+	function (depth, html) {
+		var joinString = function () {
+			if (!depth) {
+				return '';
+			} else {
+				return '\n';
+			}
+		}();
+		var initialAcc = {depth: 0, result: _List_Nil, stack: _List_Nil};
+		var indenter = function () {
+			if (!depth) {
+				return $elm$core$Basics$always($elm$core$Basics$identity);
+			} else {
+				return $PaackEng$elm_svg_string$Svg$Types$indent(depth);
+			}
+		}();
+		return A2(
+			$PaackEng$elm_svg_string$Svg$Types$join,
+			joinString,
+			A3($PaackEng$elm_svg_string$Svg$Types$htmlToStringHelper, indenter, html, initialAcc).result);
+	});
+var $PaackEng$elm_svg_string$Svg$String$toString = function (indent) {
+	return $PaackEng$elm_svg_string$Svg$Types$toString(indent);
+};
+var $mdgriffith$elm_ui$Element$Font$underline = $mdgriffith$elm_ui$Internal$Model$htmlClass($mdgriffith$elm_ui$Internal$Style$classes.underline);
 var $author$project$Main$render = function (model) {
 	var _v0 = _Utils_Tuple2(model.parsedSvg.svg, model.kanji);
-	if (_v0.a.b && (_v0.b.$ === 'Just')) {
+	if ((((_v0.a.b && _v0.a.b.b) && (_v0.a.b.a.$ === 'SvgElement')) && (!_v0.a.b.b.b)) && (_v0.b.$ === 'Just')) {
 		var _v1 = _v0.a;
 		var comment = _v1.a;
-		var paths = _v1.b;
+		var _v2 = _v1.b;
+		var name = _v2.a.a.name;
+		var attributes = _v2.a.a.attributes;
+		var children = _v2.a.a.children;
 		var kanji = _v0.b.a;
 		var svg = A2(
-			$elm$svg$Svg$svg,
-			_List_Nil,
+			$PaackEng$elm_svg_string$Svg$String$svg,
+			A2($elm$core$List$map, $author$project$SvgParserVendored$toAttribute, attributes),
 			A2(
 				$elm$core$List$map,
-				$Garados007$elm_svg_parser$SvgParser$nodeToSvg,
+				$author$project$SvgParserVendored$nodeToSvg,
 				A2(
 					$elm$core$List$cons,
 					comment,
 					A2(
 						$elm$core$List$cons,
-						$Garados007$elm_svg_parser$SvgParser$SvgElement(
+						$author$project$SvgParserVendored$SvgElement(
 							{
 								attributes: _List_Nil,
 								children: _List_fromArray(
 									[
-										$Garados007$elm_svg_parser$SvgParser$SvgText(model.parsedSvg.styleBlock)
+										$author$project$SvgParserVendored$SvgText(model.parsedSvg.styleBlock)
 									]),
 								name: 'style'
 							}),
-						paths))));
+						children))));
+		var reparse = function (parsed) {
+			var _v4 = parsed.svg;
+			if ((_v4.b && (_v4.a.$ === 'SvgElement')) && (!_v4.b.b)) {
+				var svgEl = _v4.a.a;
+				return $Garados007$elm_svg_parser$SvgParser$nodeToSvg(
+					$Garados007$elm_svg_parser$SvgParser$SvgElement(
+						{
+							attributes: A2(
+								$elm$core$List$cons,
+								_Utils_Tuple2('viewBox', '0 0 1024 1024'),
+								A2(
+									$elm$core$List$filter,
+									function (_v5) {
+										var a = _v5.a;
+										var v = _v5.b;
+										return a !== 'view-box';
+									},
+									svgEl.attributes)),
+							children: A2(
+								$elm$core$List$cons,
+								$Garados007$elm_svg_parser$SvgParser$SvgElement(
+									{
+										attributes: _List_Nil,
+										children: _List_fromArray(
+											[
+												$Garados007$elm_svg_parser$SvgParser$SvgText(parsed.styleBlock)
+											]),
+										name: 'style'
+									}),
+								svgEl.children),
+							name: 'svg'
+						}));
+			} else {
+				var d = A2($elm$core$Debug$log, '', parsed);
+				return $elm$html$Html$text('erreur');
+			}
+		}(
+			function (_v3) {
+				var svg_ = _v3.a;
+				var sb = _v3.b;
+				return {
+					styleBlock: sb,
+					svg: A2(
+						$elm$core$Result$withDefault,
+						_List_Nil,
+						$Garados007$elm_svg_parser$SvgParser$parseToNodes(svg_))
+				};
+			}(
+				A2(
+					$elm$core$Debug$log,
+					'',
+					$author$project$Main$extractStyleBlock(
+						A2($PaackEng$elm_svg_string$Svg$String$toString, 0, svg)))));
 		return A2(
 			$mdgriffith$elm_ui$Element$column,
 			_List_Nil,
@@ -18922,8 +19749,41 @@ var $author$project$Main$render = function (model) {
 				[
 					A2(
 					$mdgriffith$elm_ui$Element$el,
-					_List_Nil,
-					$mdgriffith$elm_ui$Element$html(svg))
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$width(
+							$mdgriffith$elm_ui$Element$px(400)),
+							$mdgriffith$elm_ui$Element$height(
+							$mdgriffith$elm_ui$Element$px(400))
+						]),
+					$mdgriffith$elm_ui$Element$html(reparse)),
+					A2(
+					$mdgriffith$elm_ui$Element$el,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$alignRight,
+							$mdgriffith$elm_ui$Element$Font$color(
+							A3($mdgriffith$elm_ui$Element$rgb255, 0, 0, 200)),
+							$mdgriffith$elm_ui$Element$Font$underline
+						]),
+					$mdgriffith$elm_ui$Element$html(
+						A2(
+							$elm$html$Html$a,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$href(
+									'data:application/octet-stream;charset=utf-16le;base64,' + $truqu$elm_base64$Base64$encode(
+										A2($PaackEng$elm_svg_string$Svg$String$toString, 0, svg))),
+									$elm$html$Html$Attributes$download(
+									'results-' + ($elm$core$String$fromChar(kanji) + '.svg')),
+									A2($elm$html$Html$Attributes$style, 'text-decoration', 'inherit'),
+									A2($elm$html$Html$Attributes$style, 'font-family', 'monospace')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text(
+									'results-' + ($elm$core$String$fromChar(kanji) + '.svg'))
+								]))))
 				]));
 	} else {
 		return $mdgriffith$elm_ui$Element$none;
@@ -19622,16 +20482,6 @@ var $mdgriffith$elm_ui$Element$alpha = function (o) {
 			transparency));
 };
 var $mdgriffith$elm_ui$Element$Input$charcoal = A3($mdgriffith$elm_ui$Element$rgb, 136 / 255, 138 / 255, 133 / 255);
-var $mdgriffith$elm_ui$Element$Font$color = function (fontColor) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$fontColor,
-		A3(
-			$mdgriffith$elm_ui$Internal$Model$Colored,
-			'fc-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(fontColor),
-			'color',
-			fontColor));
-};
 var $mdgriffith$elm_ui$Element$rgba = $mdgriffith$elm_ui$Internal$Model$Rgba;
 var $mdgriffith$elm_ui$Element$Input$renderPlaceholder = F3(
 	function (_v0, forPlaceholder, on) {

@@ -1,7 +1,6 @@
 module SvgParserVendored exposing
     ( SvgNode(..), Element, SvgAttribute
     , parse, parseToNode, parseToNodes, nodeToSvg, toAttribute
-    , elementToSvg
     )
 
 {-| String to SVG parser
@@ -21,9 +20,9 @@ module SvgParserVendored exposing
 import Combine exposing (..)
 import Combine.Char exposing (anyChar)
 import Html exposing (Html)
-import Svg.String exposing (Attribute, Svg, node, svg, text, toHtml)
-import Svg.String.Attributes as Svg
-import VirtualDom exposing (Attribute, attribute)
+import Svg.String as Svg exposing (Attribute, Svg, node, svg, text)
+import Svg.String.Attributes as SvgAttr
+import VirtualDom exposing (attribute)
 
 
 {-| A SVG node can be one of the three: SvgElement, SvgText or SvgComment.
@@ -220,14 +219,14 @@ This function also automatically handles the deprecated namespace attributes suc
 See [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlink:href).
 
 -}
-toAttribute : SvgAttribute -> Svg.String.Attribute msg
+toAttribute : SvgAttribute -> Attribute msg
 toAttribute ( name, value ) =
     --if String.startsWith "xlink:" name then
     --    VirtualDom.attributeNS "http://www.w3.org/1999/xlink" name value
     --else if String.startsWith "xml:" name then
     --    VirtualDom.attributeNS "http://www.w3.org/XML/1998/namespace" name value
     --else
-    Svg.attribute name value
+    SvgAttr.attribute name value
 
 
 elementToSvg : Element -> Svg msg
@@ -250,6 +249,12 @@ nodeToSvg svgNode =
 
         SvgComment content ->
             text ""
+
+
+
+--toHtml2 : Svg msg -> Html msg
+--toHtml2 =
+--    Svg.toHtml
 
 
 {-| Parse xml declaration
@@ -349,4 +354,4 @@ parse input =
                 [] ->
                     Err "No svg found"
     in
-    parseToNodes input |> Result.andThen toHtml |> Result.map Svg.String.toHtml
+    parseToNodes input |> Result.andThen toHtml |> Result.map Svg.toHtml

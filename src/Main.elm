@@ -1,8 +1,5 @@
 module Main exposing (..)
 
---import Svg.String as Svg exposing (Svg, node, svg)
---import Svg.String.Keyed
-
 import Base64
 import Browser
 import Dict exposing (..)
@@ -20,8 +17,9 @@ import Json.Decode as JD
 import List.Extra
 import Parser exposing (..)
 import String.Extra
-import Svg.String as Svg exposing (Svg)
-import SvgParser exposing (..)
+import Svg.String as Svg exposing (Svg, node, svg, toHtml)
+import SvgParser
+import SvgParserVendored exposing (..)
 import Task
 
 
@@ -67,7 +65,7 @@ initialModel _ =
             , styleBlock = ""
             }
       }
-        |> toggleAnimation
+      --|> toggleAnimation
     , Cmd.none
     )
 
@@ -105,48 +103,85 @@ view model =
 render : Model -> Element.Element msg
 render model =
     case ( model.parsedSvg.svg, model.kanji ) of
-        ( comment :: paths, Just kanji ) ->
+        ( comment :: [ SvgElement { name, attributes, children } ], Just kanji ) ->
             let
                 svg =
-                    --Svg.svg
-                    --    []
-                    --    (nodeToSvg comment
-                    --        :: Svg.node "style" [] [ Svg.text model.parsedSvg.styleBlock ]
-                    --        :: List.map nodeToSvg paths
-                    --    )
-                    (comment
-                        :: SvgElement
-                            { name = "style"
-                            , attributes = []
-                            , children = [ SvgText model.parsedSvg.styleBlock ]
-                            }
-                        :: paths
-                    )
-                        |> List.map nodeToSvg
-                        |> Svg.svg []
+                    --SvgElement
+                    --    { name = "svg"
+                    --    , attributes = attributes
+                    --    , children =
+                    --        comment
+                    --            :: SvgElement
+                    --                { name = "style"
+                    --                , attributes = []
+                    --                , children = [ SvgText model.parsedSvg.styleBlock ]
+                    --                }
+                    --            :: children
+                    --    }
+                    --    |> nodeToSvg
+                    Svg.svg (List.map toAttribute attributes)
+                        (List.map nodeToSvg
+                            (comment
+                                :: SvgElement
+                                    { name = "style"
+                                    , attributes = []
+                                    , children = [ SvgText model.parsedSvg.styleBlock ]
+                                    }
+                                :: children
+                            )
+                        )
 
-                --(List.map nodeToSvg paths)
+                reparse =
+                    Svg.toString 0 svg
+                        |> extractStyleBlock
+                        |> Debug.log ""
+                        |> (\( svg_, sb ) ->
+                                { svg = SvgParser.parseToNodes svg_ |> Result.withDefault []
+                                , styleBlock = sb
+                                }
+                           )
+                        |> (\parsed ->
+                                case parsed.svg of
+                                    [ SvgParser.SvgElement svgEl ] ->
+                                        SvgParser.SvgElement
+                                            { name = "svg"
+                                            , attributes = ( "viewBox", "0 0 1024 1024" ) :: List.filter (\( a, v ) -> a /= "view-box") svgEl.attributes
+                                            , children =
+                                                SvgParser.SvgElement
+                                                    { name = "style"
+                                                    , attributes = []
+                                                    , children = [ SvgParser.SvgText parsed.styleBlock ]
+                                                    }
+                                                    :: svgEl.children
+                                            }
+                                            |> SvgParser.nodeToSvg
+
+                                    _ ->
+                                        let
+                                            d =
+                                                Debug.log "" parsed
+                                        in
+                                        Html.text "erreur"
+                           )
             in
             column []
-                [ el []
-                    (html <| svg)
-
-                --, el
-                --    [ alignRight
-                --    , Font.color <| rgb255 0 0 200
-                --    , Font.underline
-                --    ]
-                --    (html <|
-                --        Html.a
-                --            [ HtmlAttr.href <|
-                --                "data:application/octet-stream;charset=utf-16le;base64,"
-                --                    ++ Base64.encode (Svg.toString 0 svg)
-                --            , HtmlAttr.download ("results-" ++ String.fromChar kanji ++ ".svg")
-                --            , HtmlAttr.style "text-decoration" "inherit"
-                --            , HtmlAttr.style "font-family" "monospace"
-                --            ]
-                --            [ Html.text ("results-" ++ String.fromChar kanji ++ ".svg") ]
-                --    )
+                [ el [ width (px 400), height (px 400) ] (html <| reparse)
+                , el
+                    [ alignRight
+                    , Font.color <| rgb255 0 0 200
+                    , Font.underline
+                    ]
+                    (html <|
+                        Html.a
+                            [ HtmlAttr.href <|
+                                "data:application/octet-stream;charset=utf-16le;base64,"
+                                    ++ Base64.encode (Svg.toString 0 svg)
+                            , HtmlAttr.download ("results-" ++ String.fromChar kanji ++ ".svg")
+                            , HtmlAttr.style "text-decoration" "inherit"
+                            , HtmlAttr.style "font-family" "monospace"
+                            ]
+                            [ Html.text ("results-" ++ String.fromChar kanji ++ ".svg") ]
+                    )
                 ]
 
         _ ->
@@ -256,19 +291,25 @@ extractStyleBlock s =
     let
         flat =
             String.replace "\n" "" s
+                |> String.replace "'" "\""
 
         prefix =
             String.Extra.leftOf "<style>" flat
-                |> Debug.log "prefix"
 
+        --|> Debug.log "prefix"
         suffix =
             String.Extra.rightOfBack "</style>" flat
 
         styleBlock =
-            String.Extra.rightOf "<style>" flat
-                |> String.Extra.leftOf "</style>"
-                |> String.dropLeft (String.length "<![CDATA[")
-                |> String.dropRight (String.length "]]>")
+            if String.contains "CDATA" flat then
+                String.Extra.rightOf "<style>" flat
+                    |> String.Extra.leftOf "</style>"
+                    |> String.dropLeft (String.length "<![CDATA[")
+                    |> String.dropRight (String.length "]]>")
+
+            else
+                String.Extra.rightOf "<style>" flat
+                    |> String.Extra.leftOf "</style>"
     in
     ( prefix ++ suffix, styleBlock )
 
