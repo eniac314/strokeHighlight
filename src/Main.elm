@@ -82,18 +82,18 @@ view model =
             , Font.size 16
             , width fill
             ]
-            [ row [ width fill ]
-                [ Input.text []
-                    { onChange = StrokeInput
-                    , text = model.strokeInputBuffer |> Maybe.withDefault ""
-                    , placeholder = Nothing
-                    , label = Input.labelHidden ""
-                    }
-                , Input.text []
+            [ column [ width fill, spacing 15, Font.size 16 ]
+                [ Input.text [ width (px 30), paddingXY 7 5 ]
                     { onChange = KanjiInput
                     , text = model.kanjiInputBuffer |> Maybe.withDefault ""
                     , placeholder = Nothing
-                    , label = Input.labelHidden ""
+                    , label = Input.labelAbove [] (text "Kanji input")
+                    }
+                , Input.text [ width (px 200), paddingXY 7 5 ]
+                    { onChange = StrokeInput
+                    , text = model.strokeInputBuffer |> Maybe.withDefault ""
+                    , placeholder = Nothing
+                    , label = Input.labelAbove [] (text "Index des traits à colorier")
                     }
                 ]
             , render (colorize model)
@@ -106,19 +106,6 @@ render model =
         ( comment :: [ SvgElement { name, attributes, children } ], Just kanji ) ->
             let
                 svg =
-                    --SvgElement
-                    --    { name = "svg"
-                    --    , attributes = attributes
-                    --    , children =
-                    --        comment
-                    --            :: SvgElement
-                    --                { name = "style"
-                    --                , attributes = []
-                    --                , children = [ SvgText model.parsedSvg.styleBlock ]
-                    --                }
-                    --            :: children
-                    --    }
-                    --    |> nodeToSvg
                     Svg.svg (List.map toAttribute attributes)
                         (List.map nodeToSvg
                             (comment
@@ -134,7 +121,7 @@ render model =
                 reparse =
                     Svg.toString 0 svg
                         |> extractStyleBlock
-                        |> Debug.log ""
+                        --|> Debug.log ""
                         |> (\( svg_, sb ) ->
                                 { svg = SvgParser.parseToNodes svg_ |> Result.withDefault []
                                 , styleBlock = sb
@@ -157,10 +144,10 @@ render model =
                                             |> SvgParser.nodeToSvg
 
                                     _ ->
-                                        let
-                                            d =
-                                                Debug.log "" parsed
-                                        in
+                                        --let
+                                        --    d =
+                                        --        Debug.log "" parsed
+                                        --in
                                         Html.text "erreur"
                            )
             in
