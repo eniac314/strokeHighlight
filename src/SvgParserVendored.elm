@@ -1,0 +1,352 @@
+module SvgParserVendored exposing
+    ( SvgNode(..), Element, SvgAttribute
+    , parse, parseToNode, parseToNodes, nodeToSvg, toAttribute
+    , elementToSvg
+    )
+
+{-| String to SVG parser
+
+
+# Primitives
+
+@docs SvgNode, Element, SvgAttribute
+
+
+# Parsing
+
+@docs parse, parseToNode, parseToNodes, nodeToSvg, toAttribute
+
+-}
+
+import Combine exposing (..)
+import Combine.Char exposing (anyChar)
+import Html exposing (Html)
+import Svg.String exposing (Attribute, Svg, node, svg, text, toHtml)
+import Svg.String.Attributes as Svg
+import VirtualDom exposing (Attribute, attribute)
+
+
+{-| A SVG node can be one of the three: SvgElement, SvgText or SvgComment.
+-}
+type SvgNode
+    = SvgElement Element
+    | SvgText String
+    | SvgComment String
+
+
+{-| An Element consists of a tag name, a list of attributes, a list of children nodes.
+
+    <svg xmlns="http://www.w3.org/2000/svg"></svg>
+
+will be parsed as
+
+    Element "svg" [ ( "xmlns", "http://www.w3.org/2000/svg" ) ] []
+
+-}
+type alias Element =
+    { name : String
+    , attributes : List SvgAttribute
+    , children : List SvgNode
+    }
+
+
+{-| A name/value pair to denote attribute.
+-}
+type alias SvgAttribute =
+    ( String, String )
+
+
+
+-- this function was removed in 0.19 of elm.
+
+
+flip : (a -> b -> c) -> b -> a -> c
+flip func b a =
+    func a b
+
+
+
+-- from deprecated operator (*>)
+
+
+andMapRight : Parser s x -> Parser s a -> Parser s a
+andMapRight lp rp =
+    lp
+        |> map (flip always)
+        |> andMap rp
+
+
+
+--from deprecated operator (<*)
+
+
+andMapLeft : Parser s a -> Parser s x -> Parser s a
+andMapLeft lp rp =
+    lp
+        |> map always
+        |> andMap rp
+
+
+attributeParser : Parser s SvgAttribute
+attributeParser =
+    andMap
+        (optional "" <|
+            andMapLeft
+                (andMapRight
+                    (string "=\"")
+                    (regex "[^\"]*")
+                )
+            <|
+                string "\""
+        )
+    <|
+        map Tuple.pair <|
+            regex "[^=>/]+"
+
+
+openingParser : Parser s Element
+openingParser =
+    flip andMap
+        (andMap
+            (regex "[^/>\\s]+")
+            (map
+                (\_ tagName attributes ->
+                    Element tagName attributes []
+                )
+                (string "<")
+            )
+        )
+        (andMapLeft
+            (andMapRight
+                whitespace
+                (sepBy whitespace attributeParser)
+            )
+            whitespace
+        )
+
+
+closingOrChildrenParser : Element -> Parser s Element
+closingOrChildrenParser element =
+    let
+        childrenParser =
+            map
+                (\children -> { element | children = children })
+                (andMapLeft
+                    (andMapLeft
+                        (andMapRight
+                            (andMapRight whitespace
+                                (string ">")
+                            )
+                            (many nodeParser)
+                        )
+                        whitespace
+                    )
+                    (string ("</" ++ element.name ++ ">"))
+                )
+    in
+    lazy <|
+        \_ ->
+            choice
+                [ andMapRight
+                    (andMapRight
+                        whitespace
+                        (string "/>")
+                    )
+                    (succeed element)
+                , childrenParser
+                ]
+
+
+elementParser : Parser s SvgNode
+elementParser =
+    lazy <|
+        \_ ->
+            map SvgElement
+                (andThen closingOrChildrenParser
+                    (whitespace
+                        |> map (flip always)
+                        |> andMap openingParser
+                    )
+                )
+
+
+textParser : Parser s SvgNode
+textParser =
+    lazy <|
+        \_ ->
+            map
+                SvgText
+                (andMapRight
+                    whitespace
+                 <|
+                    regex "[^<]+"
+                )
+
+
+commentParser : Parser s SvgNode
+commentParser =
+    lazy <|
+        \_ ->
+            map
+                (SvgComment
+                    << String.fromList
+                )
+                (andMapRight
+                    (andMapRight
+                        whitespace
+                     <|
+                        string "<!--"
+                    )
+                 <|
+                    manyTill anyChar <|
+                        string "-->"
+                )
+
+
+nodeParser : Parser s SvgNode
+nodeParser =
+    lazy <|
+        \_ ->
+            choice
+                [ textParser
+                , commentParser
+                , elementParser
+                ]
+
+
+{-| Convert `SvgAttribute` to `Attribute msg`. This is useful when you want to manipulate `SvgAttribute` before converting to `Html msg`.
+
+This function also automatically handles the deprecated namespace attributes such as xlink:href'.
+See [MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xlink:href).
+
+-}
+toAttribute : SvgAttribute -> Svg.String.Attribute msg
+toAttribute ( name, value ) =
+    --if String.startsWith "xlink:" name then
+    --    VirtualDom.attributeNS "http://www.w3.org/1999/xlink" name value
+    --else if String.startsWith "xml:" name then
+    --    VirtualDom.attributeNS "http://www.w3.org/XML/1998/namespace" name value
+    --else
+    Svg.attribute name value
+
+
+elementToSvg : Element -> Svg msg
+elementToSvg element =
+    node element.name
+        (List.map toAttribute element.attributes)
+        (List.map nodeToSvg element.children)
+
+
+{-| Convert `SvgNode` to `Svg msg`. This is useful when you want to manipulate `SvgNode` before conveting to `Html msg`.
+-}
+nodeToSvg : SvgNode -> Svg msg
+nodeToSvg svgNode =
+    case svgNode of
+        SvgElement element ->
+            elementToSvg element
+
+        SvgText content ->
+            text content
+
+        SvgComment content ->
+            text ""
+
+
+{-| Parse xml declaration
+-}
+xmlDeclarationParser : Parser s String
+xmlDeclarationParser =
+    map
+        String.fromList
+        (andMapRight
+            (andMapRight whitespace <|
+                string "<?xml"
+            )
+         <|
+            manyTill anyChar (string "?>")
+        )
+
+
+{-| Parse DOCTYPE declaration
+-}
+doctypeDeclarationParser : Parser s String
+doctypeDeclarationParser =
+    andMapRight whitespace <|
+        regex "<!DOCTYPE(?:\"(?:\\\\.|[^\"])*\"|'(?:\\\\.|[^'])*'|[^>])*>"
+
+
+{-| Same as parseToNode, but returns a list of all the nodes in the string.
+-}
+parseToNodes : String -> Result String (List SvgNode)
+parseToNodes input =
+    case
+        Combine.runParser
+            (andMapRight
+                (optional "" xmlDeclarationParser)
+                (andMapRight
+                    (optional "" doctypeDeclarationParser)
+                    (many nodeParser)
+                )
+            )
+            []
+            input
+    of
+        Ok ( _, _, svgNodes ) ->
+            Ok svgNodes
+
+        Err ( _, _, errors ) ->
+            Err <| String.join " or " errors
+
+
+{-| Parses `String` to `SvgNode`. Normally you will use `parse` instead of this.
+
+    parse "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>"
+        == Ok (SvgElement (Element "svg" [ ( "xmlns", "http://www.w3.org/2000/svg" ) ] []))
+
+-}
+parseToNode : String -> Result String SvgNode
+parseToNode input =
+    case
+        Combine.runParser
+            (andMapRight
+                (optional "" xmlDeclarationParser)
+                (andMapRight (optional "" doctypeDeclarationParser)
+                    nodeParser
+                )
+            )
+            []
+            input
+    of
+        Ok ( _, _, svgNode ) ->
+            Ok svgNode
+
+        Err ( _, _, errors ) ->
+            Err <| String.join " or " errors
+
+
+{-| Parses `String` to `Html msg`. This function filters top level comments to find the first `<svg>` element.
+Additional `<svg>` elements are ignored.
+-}
+parse : String -> Result String (Html msg)
+parse input =
+    let
+        toHtml svgNodes =
+            case svgNodes of
+                (SvgElement element) :: tl ->
+                    if element.name == "svg" then
+                        Ok <|
+                            svg (List.map toAttribute element.attributes)
+                                (List.map nodeToSvg element.children)
+
+                    else
+                        -- hd was not valid svg starting point, let's try the next one
+                        toHtml tl
+
+                _ :: tl ->
+                    -- hd was e.g. a Comment, let's try the next one
+                    toHtml tl
+
+                [] ->
+                    Err "No svg found"
+    in
+    parseToNodes input |> Result.andThen toHtml |> Result.map Svg.String.toHtml
