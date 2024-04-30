@@ -83,7 +83,7 @@ view model =
             , width fill
             ]
             [ column [ width fill, spacing 15, Font.size 16 ]
-                [ Input.text [ width (px 30), paddingXY 7 5 ]
+                [ Input.text [ width (px 60), paddingXY 7 5 ]
                     { onChange = KanjiInput
                     , text = model.kanjiInputBuffer |> Maybe.withDefault ""
                     , placeholder = Nothing
@@ -265,7 +265,7 @@ getSvg k =
             Char.toCode k |> String.fromInt |> (\n -> n ++ ".svg")
     in
     Http.get
-        { url = "/svgsJa/" ++ filemame
+        { url = "./svgsJa/" ++ filemame
         , expect = Http.expectString GotSvg
         }
 
